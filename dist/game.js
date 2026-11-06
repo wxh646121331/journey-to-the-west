@@ -2,9 +2,10 @@
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const W=960,H=540, PIXEL_SCALE=2, SAVE='west-stone-monkey-v1';
 const questNames=['寻找猴群并交谈','穿越瀑布，查看洞中石碑','返回瀑布前，再次与猴群交谈','带猴群进入水帘洞，在石王座前集合'];
-const followers=[1845,1890,1950];
+const followerStarts=[1845,1890,1950];
+const followers=followerStarts.map(x=>({x,y:418,vy:0,ground:true,face:1,moving:false,landing:null}));
 let escort=false, afterTalk=null, birdAt=0, stepAt=0, water=null, noiseBuffer=null;
-let mode='cover',paused=false,t=0,last=0,cam=0,storyIndex=0,score=0,activeQuiz=null,quizDone=false,burst=0,checkpoint=90,found=false,challenged=false,ending=false,muted=true,audio=null,toastUntil=0,saveTime=0;
+let mode='cover',paused=false,t=0,last=0,cam=0,storyIndex=0,score=0,activeQuiz=null,quizDone=false,burst=0,checkpoint=90,found=false,challenged=false,ending=false,muted=false,audio=null,toastUntil=0,saveTime=0;
 const keys=new Set(),player={x:90,y:360,vx:0,vy:0,w:23,h:34,ground:false,face:1};
 const platforms=[{x:-100,y:452,w:450},{x:390,y:420,w:140},{x:560,y:382,w:145},{x:740,y:425,w:260},{x:1050,y:404,w:115},{x:1210,y:365,w:140},{x:1400,y:410,w:100},{x:1540,y:452,w:530},{x:2120,y:412,w:180},{x:2340,y:392,w:160},{x:2525,y:432,w:420},{x:2975,y:405,w:150},{x:3150,y:432,w:350}];
 const peaches=[{x:215,y:408},{x:440,y:376},{x:610,y:338},{x:790,y:380},{x:960,y:382},{x:1090,y:360},{x:1260,y:321},{x:1435,y:365},{x:1740,y:408},{x:2185,y:368},{x:2405,y:348},{x:3025,y:361}].map(p=>({...p,taken:false}));
@@ -14,7 +15,7 @@ function tone(f=440,d=.12){if(muted)return;try{audio??=new (window.AudioContext|
 function toast(s){$('toast').textContent=s;toastUntil=t+3.5;}
 function setSteps(n){for(let i=0;i<3;i++)$('step'+i).classList.toggle('active',i<=n);}
 function save(){if(mode!=='play')return;try{localStorage.setItem(SAVE,JSON.stringify({x:checkpoint,score,taken:peaches.map(p=>p.taken),found,challenged,escort}));}catch{}}
-function reset(){escort=false;afterTalk=null;followers.splice(0,3,1845,1890,1950);$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
+function reset(){escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false){activeQuiz={...q,final};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
@@ -84,7 +85,7 @@ function interact(){
     return;
   }
   if(escort&&player.x>3260){
-    if(followers.some(x=>x<3090)){toast('等猴群都进洞，再到石王座前互动。');return;}
+    if(followers.some(monkey=>monkey.x<3090||!monkey.ground)){toast('等猴群都进洞，再到石王座前互动。');return;}
     showQuiz(quizzes.final,true);
     return;
   }
@@ -94,7 +95,7 @@ function finish(){$('quest').hidden=true;mode='end';ending=true;$('dialog').hidd
 function pause(){if(['cover','end'].includes(mode))return;paused=!paused;keys.clear();$('pausePanel').hidden=!paused;}
 $('start').onclick=start;$('restart').onclick=start;$('resume').onclick=pause;$('pause').onclick=pause;$('sound').onclick=()=>{muted=!muted;$('sound').textContent='♫ 声音：'+(muted?'关':'开');tone(523);};
 try{if(localStorage.getItem(SAVE))$('continue').hidden=false;}catch{}
-$('continue').onclick=()=>{try{const s=JSON.parse(localStorage.getItem(SAVE));reset();score=s.score||0;challenged=!!s.challenged;found=!!s.found;escort=!!s.escort;checkpoint=s.x||90;player.x=checkpoint;player.y=270;peaches.forEach((p,i)=>p.taken=!!s.taken?.[i]);$('cover').hidden=true;$('pause').hidden=false;beginPlay();if(found)setSteps(2);}catch{start();}};
+$('continue').onclick=()=>{try{const s=JSON.parse(localStorage.getItem(SAVE));reset();score=s.score||0;challenged=!!s.challenged;found=!!s.found;escort=!!s.escort;checkpoint=s.x||90;player.x=checkpoint;player.y=270;peaches.forEach((p,i)=>p.taken=!!s.taken?.[i]);$('cover').hidden=true;$('pause').hidden=false;tone(392);beginPlay();if(found)setSteps(2);}catch{start();}};
 $('stage').addEventListener('click',e=>{if(e.target.closest('button'))return;advance();});
 window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Escape'){pause();return;}if(paused)return;if(e.code==='Space'&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW')jump();if(e.code==='KeyE')interact();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end'].includes(mode))pause();});
 document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
@@ -103,15 +104,14 @@ function update(dt){updateAmbience();
 if(paused)return;
 updateParticles(dt);
 if(mode==='burst'){
-  if(burst<1.5&&burst+dt>=1.5)scatter(478,383,180,['#ffe6a5','#c5b487','#8b9471','#fff6d3'],230);
+  if(burst<1.5&&burst+dt>=1.5){
+    scatter(478,383,180,['#ffe6a5','#c5b487','#8b9471','#fff6d3'],230);
+    noiseHit(.11,.26,4600,720);
+    noiseHit(.64,.35,440,62);
+    for(let i=1;i<=5;i++)noiseHit(.12,.075,1500-i*160,220,i*.075);
+  }
   burst+=dt;if(burst>3.7)beginPlay();return;}if(mode!=='play')return;const p=player;p.vx=(keys.has('ArrowRight')||keys.has('KeyD')?205:0)-(keys.has('ArrowLeft')||keys.has('KeyA')?205:0);if(p.vx)p.face=Math.sign(p.vx);const wasGrounded=p.ground,oldX=p.x,oldBottom=p.y+p.h;p.x=Math.max(0,Math.min(3430,p.x+p.vx*dt));if(!challenged&&p.x>2245){p.x=2245;if(oldX<2245)toast('先和猴群交谈，完成瀑布前的约定。');}
-if(escort){
-  followers.forEach((x,i)=>{
-    const target=Math.max(1810,p.x-42-i*42);
-    const gap=target-x;
-    followers[i]+=Math.sign(gap)*Math.min(Math.abs(gap),235*dt);
-  });
-}
+if(escort)moveFollowers(dt);
 p.vy+=1170*dt;p.y+=p.vy*dt;p.ground=false;for(const f of platforms){if(p.x+p.w>f.x&&p.x<f.x+f.w&&oldBottom<=f.y+3&&p.y+p.h>=f.y&&p.vy>=0){p.y=f.y-p.h;p.vy=0;p.ground=true;}}if(p.ground&&p.vx&&t>=stepAt){stepAt=t+.26;footstep();}
 if(!wasGrounded&&p.ground){footstep(true);}
 if(!wasGrounded&&p.ground)scatter(p.x+12,p.y+p.h,10,['#d5bf8c','#81975d']);
@@ -128,20 +128,56 @@ function drawCover(){drawBackground();mountain(-90,260,530,330,'#153e34');mounta
 function drawWorld(){drawBackground();const c=cam;rect(0,485,960,55,'#497f74');for(let i=0;i<25;i++)rect((i*53+t*18)%1000,490+i%4*12,25,2,'#99bc9c55');for(let i=0;i<13;i++){const x=i*295-c;if(x>-160&&x<1100)tree(x,452,.8+i%3*.22);}if(player.x>2100){rect(2525-c,0,1000,90,'#15362e');for(let i=0;i<9;i++)poly([[2525+i*130-c,80],[2555+i*130-c,140+i%3*20],[2577+i*130-c,80]],'#15362e');}
 for(const f of platforms){if(f.x-c>1000||f.x+f.w-c<-20)continue;rect(f.x-c,f.y,f.w,110,'#344b36');rect(f.x-c,f.y,f.w,8,'#8a9b5f');rect(f.x-c,f.y+8,f.w,9,'#536b42');for(let i=0;i<f.w;i+=29){rect(f.x+i-c,f.y+30+(i%3)*13,18,5,'#465c3d');rect(f.x+i-c,f.y+19,9,4,'#263f32');}for(let i=0;i<f.w;i+=18)rect(f.x+i-c,f.y-3,3,6,'#a1ae68');}
 rect(1980-c,350,65,8,'#a59c68');rect(2005-c,330,7,26,'#8a8355');rect(1990-c,326,50,20,'#b7a36f');ctx.fillStyle='#304b35';ctx.font='10px serif';ctx.fillText('水帘洞 →',1994-c,340);
-for(const [i,x] of followers.entries()){
-  const ground=platforms.find(f=>x>=f.x&&x<f.x+f.w);
-  const y=ground?ground.y-32:Math.min(433,player.y+3);
-  monkey(x-c,y,escort?player.face:i%2?-1:1,escort&&Math.abs(player.x-x)>50,.85);
+for(const [i,follower] of followers.entries()){
+  monkey(follower.x-c,follower.y+3,escort?follower.face:i%2?-1:1,follower.ground&&follower.moving,.85);
 }
 if(!challenged){
   for(let i=0;i<14;i++)rect(2250-c,280+i*10,2,4,'#f3d991');
 }
 drawStoneFurniture(c);
-rect(3270-c,352,55,80,'#8c9879');rect(3275-c,345,45,8,'#aab18a');ctx.fillStyle='#294333';ctx.font='12px serif';for(let i=0;i<5;i++){ctx.fillText('水帘洞洞天'[i],3280-c,367+i*13);ctx.fillText('花果山福地'[i],3305-c,367+i*13);}rect(2670-c,404,54,12,'#7b8660');rect(2683-c,414,12,18,'#7b8660');rect(2760-c,416,25,16,'#7b8660');
+rect(3270-c,352,55,80,'#8c9879');rect(3275-c,345,45,8,'#aab18a');ctx.fillStyle='#294333';ctx.font='12px serif';for(let i=0;i<5;i++){ctx.fillText('水帘洞洞天'[i],3280-c,367+i*13);ctx.fillText('花果山福地'[i],3305-c,367+i*13);}rect(2670-c,404,54,12,'#7b8660');rect(2680-c,414,9,18,'#7b8660');rect(2706-c,414,9,18,'#7b8660');rect(2760-c,416,25,16,'#7b8660');
 peaches.filter(p=>!p.taken).forEach(p=>peach(p.x-c,p.y));monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx,1,ending);
 const fx=2280-c;rect(fx,0,75,458,'#a8d8cb88');for(let i=0;i<15;i++){const yy=(t*190+i*47)%450;rect(fx+i%6*13,yy,4,29+i%4*15,'#d3efda99');}for(let i=0;i<18;i++){const a=i*2.3;rect(fx+37+Math.sin(a+t)*48,451+Math.cos(a+t*2)*13,5,4,'#e1edce99');}if(player.x>2090&&player.x<2350&&!found){ctx.fillStyle='#f1e1ac';ctx.font='13px sans-serif';ctx.fillText('向右跃入水帘 →',2100-c,300);}if(mode==='play'){let label='';let x=0;if(player.x>1780&&player.x<2070){label='[ E ] '+(found?'告诉猴群你的发现':'与猴群交谈');x=1880;}if(player.x>3210&&(!found||escort)){label=escort?'[ E ] 石王座':'[ E ] 读石碑';x=3280;}if(label){ctx.textAlign='center';ctx.font='13px sans-serif';ctx.fillStyle='#f5deb0';ctx.fillText(label,x-c,306);ctx.textAlign='left';}}}
+function moveFollowers(dt){
+  followers.forEach((follower,i)=>{
+    const target=Math.max(1810,player.x-42-i*42);
+    const current=platforms.findIndex(p=>follower.x>=p.x&&follower.x<p.x+p.w);
+    const direction=Math.sign(target-follower.x);
+    if(follower.ground&&current>=0&&direction){
+      const platform=platforms[current];
+      const next=platforms[current+direction];
+      const edge=direction>0?platform.x+platform.w:platform.x;
+      if(next&&direction*(target-edge)>=0&&Math.abs(edge-follower.x)<19){
+        follower.face=direction;
+        follower.landing=next.x+next.w/2;
+        follower.vy=-510;
+        follower.ground=false;
+      }
+    }
+    const goal=follower.landing??target;
+    const gap=goal-follower.x;
+    follower.moving=Math.abs(gap)>1;
+    if(follower.moving)follower.face=Math.sign(gap);
+    follower.x+=Math.sign(gap)*Math.min(Math.abs(gap),205*dt);
+    const oldBottom=follower.y+34;
+    follower.vy+=1170*dt;
+    follower.y+=follower.vy*dt;
+    follower.ground=false;
+    for(const platform of platforms){
+      if(follower.x<platform.x||follower.x>=platform.x+platform.w)continue;
+      if(follower.vy>=0&&oldBottom<=platform.y+3&&follower.y+34>=platform.y){
+        follower.y=platform.y-34;
+        follower.vy=0;
+        follower.ground=true;
+        follower.landing=null;
+        break;
+      }
+    }
+  });
+}
+
 function drawStoneFurniture(camera){
-  for(const x of [2700,2810,2940]){
+  for(const x of [2810,2870]){
     const top=x-camera;
     rect(top+5,412,6,20,'#526750');
     rect(top+32,412,6,20,'#526750');
@@ -166,13 +202,13 @@ function makeNoise(){
   for(let i=0;i<samples.length;i++)samples[i]=Math.random()*2-1;
   return noiseBuffer;
 }
-function noiseHit(duration,volume,frequency,endFrequency=frequency){
+function noiseHit(duration,volume,frequency,endFrequency=frequency,delay=0){
   if(muted||!audio||audio.state!=='running')return;
   const source=audio.createBufferSource();
   source.buffer=makeNoise();
   const filter=audio.createBiquadFilter();
   filter.type='lowpass';
-  const now=audio.currentTime;
+  const now=audio.currentTime+delay;
   filter.frequency.setValueAtTime(frequency,now);
   filter.frequency.exponentialRampToValueAtTime(endFrequency,now+duration);
   const gain=audio.createGain();
