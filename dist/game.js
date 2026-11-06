@@ -1,6 +1,9 @@
 'use strict';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const W=960,H=540, PIXEL_SCALE=2, SAVE='west-stone-monkey-v1';
+const questNames=['寻找猴群并交谈','穿越瀑布，查看洞中石碑','返回瀑布前，再次与猴群交谈','带猴群进入水帘洞，在石王座前集合'];
+const followers=[1845,1890,1950];
+let escort=false, afterTalk=null, birdAt=0, stepAt=0, water=null, noiseBuffer=null;
 let mode='cover',paused=false,t=0,last=0,cam=0,storyIndex=0,score=0,activeQuiz=null,quizDone=false,burst=0,checkpoint=90,found=false,challenged=false,ending=false,muted=true,audio=null,toastUntil=0,saveTime=0;
 const keys=new Set(),player={x:90,y:360,vx:0,vy:0,w:23,h:34,ground:false,face:1};
 const platforms=[{x:-100,y:452,w:450},{x:390,y:420,w:140},{x:560,y:382,w:145},{x:740,y:425,w:260},{x:1050,y:404,w:115},{x:1210,y:365,w:140},{x:1400,y:410,w:100},{x:1540,y:452,w:530},{x:2120,y:412,w:180},{x:2340,y:392,w:160},{x:2525,y:432,w:420},{x:2975,y:405,w:150},{x:3150,y:432,w:350}];
@@ -10,34 +13,110 @@ const quizzes={3:{q:'花果山位于哪一洲？',a:['东胜神洲','南赡部�
 function tone(f=440,d=.12){if(muted)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+d);}catch{}}
 function toast(s){$('toast').textContent=s;toastUntil=t+3.5;}
 function setSteps(n){for(let i=0;i<3;i++)$('step'+i).classList.toggle('active',i<=n);}
-function save(){if(mode!=='play')return;try{localStorage.setItem(SAVE,JSON.stringify({x:checkpoint,score,taken:peaches.map(p=>p.taken),found,challenged}));}catch{}}
-function reset(){particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
+function save(){if(mode!=='play')return;try{localStorage.setItem(SAVE,JSON.stringify({x:checkpoint,score,taken:peaches.map(p=>p.taken),found,challenged,escort}));}catch{}}
+function reset(){escort=false;afterTalk=null;followers.splice(0,3,1845,1890,1950);$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false){activeQuiz={...q,final};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
 function answer(i){if(quizDone)return;quizDone=true;const correct=i===activeQuiz.right;if(correct){score++;tone(660);}else tone(180,.2);$('dialog').innerHTML=`<div class="speaker">山海问答</div><div class="line">${correct?'✦ 回答正确！':'正确答案：'+ 'ABC'[activeQuiz.right]+' · '+activeQuiz.a[activeQuiz.right]}</div><div class="feedback ${correct?'correct':''}">${activeQuiz.why}</div><span class="next">点击继续 ▾</span>`;}
-function advance(){if(paused)return;if(mode==='story'){storyIndex++;if(quizzes[storyIndex])showQuiz(quizzes[storyIndex]);else if(storyIndex>=lines.length)startBurst();else showLine();}else if(mode==='quiz'&&quizDone){const final=activeQuiz.final;activeQuiz=null;if(final)finish();else{mode='story';showLine();}}else if(mode==='talk'){closeDialog();}}
+function advance(){if(paused)return;if(mode==='story'){storyIndex++;if(quizzes[storyIndex])showQuiz(quizzes[storyIndex]);else if(storyIndex>=lines.length)startBurst();else showLine();}else if(mode==='quiz'&&quizDone){const final=activeQuiz.final;activeQuiz=null;if(final)talk('猴群 · 拜见美猴王','多亏你找到了这处洞天！我们说话算数，从今往后，你便是我们的美猴王！',finish);else{mode='story';showLine();}}else if(mode==='talk'){closeDialog();}}
 function startBurst(){mode='burst';burst=0;$('dialog').hidden=true;$('hint').textContent='仙石迸裂，石猴初生。';tone(110,.8);}
-function beginPlay(){mode='play';$('dialog').hidden=true;$('hud').hidden=false;$('touch').hidden=false;setSteps(1);$('hint').textContent='方向键移动，空格跳跃；靠近猴群按 E 交谈';toast('你成为了石猴。向右走，沿溪流寻找猴群。');save();}
-function closeDialog(){mode='play';$('dialog').hidden=true;$('touch').hidden=false;keys.clear();}
-function talk(title,text){mode='talk';keys.clear();$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">${title}</div><div class="line">${text}</div><span class="next">点击屏幕继续 ▾</span>`;}
-function interact(){if(mode!=='play'||paused)return;if(player.x>1780&&player.x<2070){if(found){showQuiz(quizzes.final,true);return;}challenged=true;checkpoint=1810;save();talk('猴群 · 瀑布前的约定','谁有本事钻进瀑布，寻个源头，再平安回来，我们就拜他为王！');}else if(player.x>3210){if(!challenged){toast('先回瀑布前，与猴群交谈，接受探洞挑战。');return;}if(!found){found=true;checkpoint=3190;setSteps(2);save();talk('洞中石碑','花果山福地，水帘洞洞天。原来水幕后竟有这般好住处！快回去告诉猴群吧。');}else toast('沿原路返回猴群（向左），告诉大家你的发现。');}else toast(found?'返回瀑布前的猴群，按 E 交谈。':'沿溪流向右前进，靠近猴群或石碑按 E 互动。');}
-function finish(){mode='end';ending=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('pause').hidden=true;setSteps(2);const n=peaches.filter(p=>p.taken).length;$('ending').hidden=false;$('ending').innerHTML=`<span class="eyebrow">CHAPTER COMPLETE</span><h2>美 猴 王</h2><div class="cn-title">第一关 · 石破天惊，圆满完成</div><p>你为猴群寻得洞天，也赢得了他们的信任。</p><div class="stats"><div><strong>${n} / 12</strong><span>林间仙桃</span></div><div><strong>${score} / 3</strong><span>山海问答</span></div><div><strong>已发现</strong><span>水帘洞天</span></div></div><button class="primary" id="again">再游花果山 ↻</button><p>下一段旅程 · 漂洋过海，访道求仙（待续）</p>`;$('again').onclick=start;$('status').textContent='第一关完成 · 美猴王诞生';$('hint').textContent='第一段旅程已完成，感谢你走进花果山。';try{localStorage.removeItem(SAVE);}catch{}tone(523,.3);setTimeout(()=>tone(784,.5),220);}
+function beginPlay(){mode='play';$('dialog').hidden=true;$('hud').hidden=false;$('touch').hidden=false;setSteps(1);showQuest();$('hint').textContent='方向键移动，空格跳跃；靠近猴群按 E 交谈';toast('你成为了石猴。向右走，沿溪流寻找猴群。');save();}
+function showQuest(){
+  const card=$('quest');
+  card.hidden=false;
+  $('questTitle').textContent=questNames[escort?3:found?2:challenged?1:0];
+  card.classList.remove('arrival');
+  const stage=$('stage');
+  if(stage.clientWidth){
+    card.style.setProperty('--quest-x', (stage.clientWidth/2-card.offsetLeft-card.offsetWidth/2)+'px');
+    card.style.setProperty('--quest-y', (stage.clientHeight/2-card.offsetTop-card.offsetHeight/2)+'px');
+    void card.offsetWidth;
+    card.classList.add('arrival');
+  }
+}
+function closeDialog(){
+  mode='play';
+  $('dialog').hidden=true;
+  $('touch').hidden=false;
+  keys.clear();
+  const next=afterTalk;
+  afterTalk=null;
+  if(next)next();
+}
+function talk(title,text,next){
+  mode='talk';
+  afterTalk=next;
+  keys.clear();
+  $('touch').hidden=true;
+  $('dialog').hidden=false;
+  $('dialog').innerHTML=`<div class="speaker">${title}</div><div class="line">${text}</div><span class="next">点击屏幕继续 ▾</span>`;
+  if(title.startsWith('猴群'))chatter();
+}
+function interact(){
+  if(mode!=='play'||paused)return;
+  if(player.x>1780&&player.x<2070&&!escort){
+    if(!found){
+      talk('猴群 · 瀑布前的约定','谁能穿过瀑布，探明水源，再平安回来，我们就拜他为王！',()=>{
+        challenged=true;
+        checkpoint=1810;
+        save();
+        showQuest();
+      });
+    }else{
+      talk('猴群 · 一同入洞','瀑布后面有石桥和一处宽敞洞府？好！你在前面带路，我们跟你去。',()=>{
+        escort=true;
+        checkpoint=1810;
+        save();
+        showQuest();
+      });
+    }
+    return;
+  }
+  if(player.x>3210&&!found&&challenged){
+    talk('洞中石碑','花果山福地，水帘洞洞天。这里能遮风避雨，快回去告诉猴群！',()=>{
+      found=true;
+      checkpoint=3190;
+      setSteps(2);
+      save();
+      showQuest();
+    });
+    return;
+  }
+  if(escort&&player.x>3260){
+    if(followers.some(x=>x<3090)){toast('等猴群都进洞，再到石王座前互动。');return;}
+    showQuiz(quizzes.final,true);
+    return;
+  }
+  toast($('questTitle').textContent);
+}
+function finish(){$('quest').hidden=true;mode='end';ending=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('pause').hidden=true;setSteps(2);const n=peaches.filter(p=>p.taken).length;$('ending').hidden=false;$('ending').innerHTML=`<span class="eyebrow">CHAPTER COMPLETE</span><h2>美 猴 王</h2><div class="cn-title">第一关 · 石破天惊，圆满完成</div><p>你为猴群寻得洞天，也赢得了他们的信任。</p><div class="stats"><div><strong>${n} / 12</strong><span>林间仙桃</span></div><div><strong>${score} / 3</strong><span>山海问答</span></div><div><strong>已发现</strong><span>水帘洞天</span></div></div><button class="primary" id="again">再游花果山 ↻</button><p>下一段旅程 · 漂洋过海，访道求仙（待续）</p>`;$('again').onclick=start;$('status').textContent='第一关完成 · 美猴王诞生';$('hint').textContent='第一段旅程已完成，感谢你走进花果山。';try{localStorage.removeItem(SAVE);}catch{}tone(523,.3);setTimeout(()=>tone(784,.5),220);}
 function pause(){if(['cover','end'].includes(mode))return;paused=!paused;keys.clear();$('pausePanel').hidden=!paused;}
 $('start').onclick=start;$('restart').onclick=start;$('resume').onclick=pause;$('pause').onclick=pause;$('sound').onclick=()=>{muted=!muted;$('sound').textContent='♫ 声音：'+(muted?'关':'开');tone(523);};
 try{if(localStorage.getItem(SAVE))$('continue').hidden=false;}catch{}
-$('continue').onclick=()=>{try{const s=JSON.parse(localStorage.getItem(SAVE));reset();score=s.score||0;challenged=!!s.challenged;found=!!s.found;checkpoint=s.x||90;player.x=checkpoint;player.y=270;peaches.forEach((p,i)=>p.taken=!!s.taken?.[i]);$('cover').hidden=true;$('pause').hidden=false;beginPlay();if(found)setSteps(2);}catch{start();}};
+$('continue').onclick=()=>{try{const s=JSON.parse(localStorage.getItem(SAVE));reset();score=s.score||0;challenged=!!s.challenged;found=!!s.found;escort=!!s.escort;checkpoint=s.x||90;player.x=checkpoint;player.y=270;peaches.forEach((p,i)=>p.taken=!!s.taken?.[i]);$('cover').hidden=true;$('pause').hidden=false;beginPlay();if(found)setSteps(2);}catch{start();}};
 $('stage').addEventListener('click',e=>{if(e.target.closest('button'))return;advance();});
 window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Escape'){pause();return;}if(paused)return;if(e.code==='Space'&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW')jump();if(e.code==='KeyE')interact();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end'].includes(mode))pause();});
 document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
-function jump(){if(mode==='play'&&!paused&&player.ground){scatter(player.x+12,player.y+34,12,['#d5bf8c','#81975d']);player.vy=-510;player.ground=false;tone(270,.09);}}
-function update(dt){if(paused)return;
+function jump(){if(mode==='play'&&!paused&&player.ground){scatter(player.x+12,player.y+34,12,['#d5bf8c','#81975d']);player.vy=-510;player.ground=false;noiseHit(.17,.12,850,220);}}
+function update(dt){updateAmbience();
+if(paused)return;
 updateParticles(dt);
 if(mode==='burst'){
   if(burst<1.5&&burst+dt>=1.5)scatter(478,383,180,['#ffe6a5','#c5b487','#8b9471','#fff6d3'],230);
-  burst+=dt;if(burst>3.7)beginPlay();return;}if(mode!=='play')return;const p=player;p.vx=(keys.has('ArrowRight')||keys.has('KeyD')?205:0)-(keys.has('ArrowLeft')||keys.has('KeyA')?205:0);if(p.vx)p.face=Math.sign(p.vx);const wasGrounded=p.ground,oldX=p.x,oldBottom=p.y+p.h;p.x=Math.max(0,Math.min(3430,p.x+p.vx*dt));p.vy+=1170*dt;p.y+=p.vy*dt;p.ground=false;for(const f of platforms){if(p.x+p.w>f.x&&p.x<f.x+f.w&&oldBottom<=f.y+3&&p.y+p.h>=f.y&&p.vy>=0){p.y=f.y-p.h;p.vy=0;p.ground=true;}}if(!wasGrounded&&p.ground)scatter(p.x+12,p.y+p.h,10,['#d5bf8c','#81975d']);
+  burst+=dt;if(burst>3.7)beginPlay();return;}if(mode!=='play')return;const p=player;p.vx=(keys.has('ArrowRight')||keys.has('KeyD')?205:0)-(keys.has('ArrowLeft')||keys.has('KeyA')?205:0);if(p.vx)p.face=Math.sign(p.vx);const wasGrounded=p.ground,oldX=p.x,oldBottom=p.y+p.h;p.x=Math.max(0,Math.min(3430,p.x+p.vx*dt));if(!challenged&&p.x>2245){p.x=2245;if(oldX<2245)toast('先和猴群交谈，完成瀑布前的约定。');}
+if(escort){
+  followers.forEach((x,i)=>{
+    const target=Math.max(1810,p.x-42-i*42);
+    const gap=target-x;
+    followers[i]+=Math.sign(gap)*Math.min(Math.abs(gap),235*dt);
+  });
+}
+p.vy+=1170*dt;p.y+=p.vy*dt;p.ground=false;for(const f of platforms){if(p.x+p.w>f.x&&p.x<f.x+f.w&&oldBottom<=f.y+3&&p.y+p.h>=f.y&&p.vy>=0){p.y=f.y-p.h;p.vy=0;p.ground=true;}}if(p.ground&&p.vx&&t>=stepAt){stepAt=t+.26;footstep();}
+if(!wasGrounded&&p.ground){footstep(true);}
+if(!wasGrounded&&p.ground)scatter(p.x+12,p.y+p.h,10,['#d5bf8c','#81975d']);
 if((oldX<2317)!==(p.x<2317))scatter(2317,p.y+15,60,['#d4fff0','#8fcfc4','#f5f9db'],130);
-if(p.y>600){p.x=checkpoint;p.y=270;p.vy=0;toast('溪水将你送回岸边。再试一次吧！');}if(p.ground&&p.x>1540&&p.x<1790)checkpoint=1580;if(p.ground&&p.x>2525&&challenged&&!found)checkpoint=2570;for(const f of peaches){if(!f.taken&&Math.abs(p.x+12-f.x)<27&&Math.abs(p.y+17-f.y)<34){f.taken=true;scatter(f.x,f.y,36,['#ffd39a','#f1a785','#f9edbd'],100);tone(740,.09);toast('仙桃 +1');save();}}cam+=((Math.max(0,Math.min(2540,p.x-330)))-cam)*Math.min(1,dt*7);$('area').textContent=p.x<650?'花果山 · 灵石台':p.x<1550?'花果山 · 青石涧':p.x<2320?'花果山 · 飞瀑前':'水帘洞 · 别有洞天';$('counts').textContent=`仙桃 ${peaches.filter(f=>f.taken).length}/12　✦ ${score}`;$('status').textContent=found?'目标 · 返回猴群，带大家入住水帘洞':challenged?'目标 · 穿过瀑布，调查洞内石碑':'目标 · 沿溪流寻找猴群';if(t>saveTime){save();saveTime=t+4;}}
+if(p.y>600){p.x=checkpoint;p.y=270;p.vy=0;toast('溪水将你送回岸边。再试一次吧！');}if(p.ground&&p.x>1540&&p.x<1790)checkpoint=1580;if(p.ground&&p.x>2525&&challenged&&!found)checkpoint=2570;for(const f of peaches){if(!f.taken&&Math.abs(p.x+12-f.x)<27&&Math.abs(p.y+17-f.y)<34){f.taken=true;scatter(f.x,f.y,36,['#ffd39a','#f1a785','#f9edbd'],100);tone(740,.09);toast('仙桃 +1');save();}}cam+=((Math.max(0,Math.min(2540,p.x-330)))-cam)*Math.min(1,dt*7);$('area').textContent=p.x<650?'花果山 · 灵石台':p.x<1550?'花果山 · 青石涧':p.x<2320?'花果山 · 飞瀑前':'水帘洞 · 别有洞天';$('counts').textContent=`仙桃 ${peaches.filter(f=>f.taken).length}/12　✦ ${score}`;$('status').textContent=escort?'目标 · 带猴群到石王座前':found?'目标 · 返回猴群，带大家入住水帘洞':challenged?'目标 · 穿过瀑布，调查洞内石碑':'目标 · 沿溪流寻找猴群';if(t>saveTime){save();saveTime=t+4;}}
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x*PIXEL_SCALE)/PIXEL_SCALE,Math.round(y*PIXEL_SCALE)/PIXEL_SCALE,Math.round(w*PIXEL_SCALE)/PIXEL_SCALE,Math.round(h*PIXEL_SCALE)/PIXEL_SCALE);}
 function poly(points,c){ctx.fillStyle=c;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();}
 function mountain(x,y,w,h,c){poly([[x,y+h],[x+w*.12,y+h*.56],[x+w*.25,y+h*.56],[x+w*.25,y+h*.28],[x+w*.36,y+h*.28],[x+w*.36,y+h*.12],[x+w*.47,y],[x+w*.6,y+h*.06],[x+w*.6,y+h*.26],[x+w*.72,y+h*.26],[x+w*.8,y+h*.6],[x+w*.92,y+h*.6],[x+w,y+h]],c);}
@@ -49,10 +128,106 @@ function drawCover(){drawBackground();mountain(-90,260,530,330,'#153e34');mounta
 function drawWorld(){drawBackground();const c=cam;rect(0,485,960,55,'#497f74');for(let i=0;i<25;i++)rect((i*53+t*18)%1000,490+i%4*12,25,2,'#99bc9c55');for(let i=0;i<13;i++){const x=i*295-c;if(x>-160&&x<1100)tree(x,452,.8+i%3*.22);}if(player.x>2100){rect(2525-c,0,1000,90,'#15362e');for(let i=0;i<9;i++)poly([[2525+i*130-c,80],[2555+i*130-c,140+i%3*20],[2577+i*130-c,80]],'#15362e');}
 for(const f of platforms){if(f.x-c>1000||f.x+f.w-c<-20)continue;rect(f.x-c,f.y,f.w,110,'#344b36');rect(f.x-c,f.y,f.w,8,'#8a9b5f');rect(f.x-c,f.y+8,f.w,9,'#536b42');for(let i=0;i<f.w;i+=29){rect(f.x+i-c,f.y+30+(i%3)*13,18,5,'#465c3d');rect(f.x+i-c,f.y+19,9,4,'#263f32');}for(let i=0;i<f.w;i+=18)rect(f.x+i-c,f.y-3,3,6,'#a1ae68');}
 rect(1980-c,350,65,8,'#a59c68');rect(2005-c,330,7,26,'#8a8355');rect(1990-c,326,50,20,'#b7a36f');ctx.fillStyle='#304b35';ctx.font='10px serif';ctx.fillText('水帘洞 →',1994-c,340);
-for(const [i,x]of [1845,1890,1950].entries())monkey(x-c,417+(i%2)*0,i%2?-1:1,false,.85);
+for(const [i,x] of followers.entries()){
+  const ground=platforms.find(f=>x>=f.x&&x<f.x+f.w);
+  const y=ground?ground.y-32:Math.min(433,player.y+3);
+  monkey(x-c,y,escort?player.face:i%2?-1:1,escort&&Math.abs(player.x-x)>50,.85);
+}
+if(!challenged){
+  for(let i=0;i<14;i++)rect(2250-c,280+i*10,2,4,'#f3d991');
+}
+drawStoneFurniture(c);
 rect(3270-c,352,55,80,'#8c9879');rect(3275-c,345,45,8,'#aab18a');ctx.fillStyle='#294333';ctx.font='12px serif';for(let i=0;i<5;i++){ctx.fillText('水帘洞洞天'[i],3280-c,367+i*13);ctx.fillText('花果山福地'[i],3305-c,367+i*13);}rect(2670-c,404,54,12,'#7b8660');rect(2683-c,414,12,18,'#7b8660');rect(2760-c,416,25,16,'#7b8660');
 peaches.filter(p=>!p.taken).forEach(p=>peach(p.x-c,p.y));monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx,1,ending);
-const fx=2280-c;rect(fx,0,75,458,'#a8d8cb88');for(let i=0;i<15;i++){const yy=(t*190+i*47)%450;rect(fx+i%6*13,yy,4,29+i%4*15,'#d3efda99');}for(let i=0;i<18;i++){const a=i*2.3;rect(fx+37+Math.sin(a+t)*48,451+Math.cos(a+t*2)*13,5,4,'#e1edce99');}if(player.x>2090&&player.x<2350&&!found){ctx.fillStyle='#f1e1ac';ctx.font='13px sans-serif';ctx.fillText('向右跃入水帘 →',2100-c,300);}if(mode==='play'){let label='';let x=0;if(player.x>1780&&player.x<2070){label='[ E ] '+(found?'告诉猴群你的发现':'与猴群交谈');x=1880;}if(player.x>3210){label='[ E ] 读石碑';x=3280;}if(label){ctx.textAlign='center';ctx.font='13px sans-serif';ctx.fillStyle='#f5deb0';ctx.fillText(label,x-c,306);ctx.textAlign='left';}}}
+const fx=2280-c;rect(fx,0,75,458,'#a8d8cb88');for(let i=0;i<15;i++){const yy=(t*190+i*47)%450;rect(fx+i%6*13,yy,4,29+i%4*15,'#d3efda99');}for(let i=0;i<18;i++){const a=i*2.3;rect(fx+37+Math.sin(a+t)*48,451+Math.cos(a+t*2)*13,5,4,'#e1edce99');}if(player.x>2090&&player.x<2350&&!found){ctx.fillStyle='#f1e1ac';ctx.font='13px sans-serif';ctx.fillText('向右跃入水帘 →',2100-c,300);}if(mode==='play'){let label='';let x=0;if(player.x>1780&&player.x<2070){label='[ E ] '+(found?'告诉猴群你的发现':'与猴群交谈');x=1880;}if(player.x>3210&&(!found||escort)){label=escort?'[ E ] 石王座':'[ E ] 读石碑';x=3280;}if(label){ctx.textAlign='center';ctx.font='13px sans-serif';ctx.fillStyle='#f5deb0';ctx.fillText(label,x-c,306);ctx.textAlign='left';}}}
+function drawStoneFurniture(camera){
+  for(const x of [2700,2810,2940]){
+    const top=x-camera;
+    rect(top+5,412,6,20,'#526750');
+    rect(top+32,412,6,20,'#526750');
+    rect(top,406,44,10,'#879477');
+    rect(top,406,44,3,'#a7ab87');
+  }
+  const x=3370-camera;
+  rect(x-31,418,72,14,'#576c56');
+  rect(x-23,359,56,61,'#78896e');
+  rect(x-17,350,44,12,'#9ca78a');
+  rect(x-16,366,42,46,'#627960');
+  rect(x-30,391,14,28,'#a0a98a');
+  rect(x+27,391,14,28,'#a0a98a');
+  rect(x-25,406,61,11,'#99a182');
+  rect(x-36,427,82,5,'#a9ab88');
+}
+
+function makeNoise(){
+  if(noiseBuffer)return noiseBuffer;
+  noiseBuffer=audio.createBuffer(1,audio.sampleRate*2,audio.sampleRate);
+  const samples=noiseBuffer.getChannelData(0);
+  for(let i=0;i<samples.length;i++)samples[i]=Math.random()*2-1;
+  return noiseBuffer;
+}
+function noiseHit(duration,volume,frequency,endFrequency=frequency){
+  if(muted||!audio||audio.state!=='running')return;
+  const source=audio.createBufferSource();
+  source.buffer=makeNoise();
+  const filter=audio.createBiquadFilter();
+  filter.type='lowpass';
+  const now=audio.currentTime;
+  filter.frequency.setValueAtTime(frequency,now);
+  filter.frequency.exponentialRampToValueAtTime(endFrequency,now+duration);
+  const gain=audio.createGain();
+  gain.gain.setValueAtTime(.001,now);
+  gain.gain.linearRampToValueAtTime(volume,now+.015);
+  gain.gain.exponentialRampToValueAtTime(.001,now+duration);
+  source.connect(filter).connect(gain).connect(audio.destination);
+  source.start(now,Math.random());
+  source.stop(now+duration);
+}
+function footstep(landing=false){
+  noiseHit(landing?.14:.095,landing?.19:.12,420+Math.random()*330,130);
+}
+function chirp(from,to,duration,delay,volume,type='sine'){
+  if(muted||!audio||audio.state!=='running')return;
+  const now=audio.currentTime+delay;
+  const voice=audio.createOscillator();
+  const gain=audio.createGain();
+  voice.type=type;
+  voice.frequency.setValueAtTime(from,now);
+  voice.frequency.exponentialRampToValueAtTime(to,now+duration);
+  gain.gain.setValueAtTime(.001,now);
+  gain.gain.linearRampToValueAtTime(volume,now+duration*.24);
+  gain.gain.exponentialRampToValueAtTime(.001,now+duration);
+  voice.connect(gain).connect(audio.destination);
+  voice.start(now);
+  voice.stop(now+duration);
+}
+function chatter(){
+  for(let i=0;i<6;i++)chirp(230+Math.random()*150,120+Math.random()*190,.09+i%2*.07,i*.13,.035,'triangle');
+}
+function updateAmbience(){
+  if(!audio||audio.state!=='running')return;
+  if(!water&&!muted){
+    const source=audio.createBufferSource();
+    source.buffer=makeNoise();
+    source.loop=true;
+    const filter=audio.createBiquadFilter();
+    filter.type='lowpass';
+    filter.frequency.value=930;
+    water=audio.createGain();
+    water.gain.value=0;
+    source.connect(filter).connect(water).connect(audio.destination);
+    source.start();
+  }
+  const quiet=muted||paused;
+  const distance=mode==='play'||mode==='talk'?Math.abs(player.x-2317):700;
+  water?.gain.setTargetAtTime(quiet?0:.018+.13*Math.max(0,1-distance/950),audio.currentTime,.2);
+  if(!quiet&&t>birdAt&&player.x<2430){
+    birdAt=t+3+Math.random()*6;
+    chirp(1900,2900,.09,0,.024);
+    chirp(2850,2050,.13,.15,.021);
+  }
+}
+
 const particles=[];
 function scatter(x,y,count,colors,speed=65){
   for(let i=0;i<count;i++){
