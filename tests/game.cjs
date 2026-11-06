@@ -21,6 +21,6 @@ player.x=1880;interact();closeDialog();if(!escort)throw Error('Escort objective'
 player.x=3350;interact();if(mode!=='play')throw Error('Cannot finish before monkeys arrive');
 player.y=398;player.vy=0;
 for(let i=0;i<480;i++)update(1/60);
-interact();if(mode!=='quiz'||!activeQuiz.final)throw Error('Throne objective');answer(2);advance();if(mode!=='talk')throw Error('Coronation dialogue');advance();if(mode!=='end')throw Error('Ending');
+interact();if(mode!=='quiz'||!activeQuiz.final)throw Error('Throne objective');answer(2);advance();if(mode!=='talk')throw Error('Coronation dialogue');advance();if(mode!=='coronation')throw Error('Throne scene');for(let i=0;i<240;i++){t+=1/60;update(1/60);}if(mode!=='end'||seatedAt===null)throw Error('Seated ending');
 `,context);
 console.log('PASS: story, incorrect/correct answers, birth, physics, all platforms in both directions, challenge, discovery, return and ending.');
