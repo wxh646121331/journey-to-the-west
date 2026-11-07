@@ -48,7 +48,7 @@ const followerStarts=[1845,1890,1950];
 const followers=followerStarts.map(x=>({x,y:418,vy:0,ground:true,face:1,moving:false,landing:null}));
 let escort=false, afterTalk=null, birdAt=0, stepAt=0, water=null, noiseBuffer=null;
 let mode='cover',paused=false,t=0,last=0,cam=0,storyIndex=0,score=0,activeQuiz=null,quizDone=false,burst=0,checkpoint=90,found=false,challenged=false,ending=false,muted=false,audio=null,toastUntil=0,saveTime=0;
-let jumpRequestedUntil=-1;
+let jumpRequestedUntil=-1, death=null;
 const keys=new Set(),player={x:90,y:360,vx:0,vy:0,w:23,h:34,ground:false,face:1};
 const platforms=[{x:-100,y:452,w:450},{x:390,y:420,w:140},{x:560,y:382,w:145},{x:740,y:425,w:260},{x:1050,y:404,w:115},{x:1210,y:365,w:140},{x:1400,y:410,w:100},{x:1540,y:452,w:530},{x:2120,y:412,w:180},{x:2340,y:392,w:160},{x:2525,y:432,w:420},{x:2975,y:405,w:150},{x:3150,y:432,w:350}];
 const peaches=[{x:215,y:408},{x:440,y:376},{x:610,y:338},{x:790,y:380},{x:960,y:382},{x:1090,y:360},{x:1260,y:321},{x:1435,y:365},{x:1740,y:408},{x:2185,y:368},{x:2405,y:348},{x:3025,y:361}].map(p=>({...p,taken:false}));
@@ -81,7 +81,7 @@ function placePlayerOnGround(route,x){
   Object.assign(player,{x:safeX,y:floor.y-player.h,vx:0,vy:0,ground:true});
   jumpRequestedUntil=-1;
 }
-function reset(){$('heavenBossHud').hidden=true;$('heavenWarning').hidden=true;$('practiceNext').hidden=true;clearTransformation();slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;effectRings.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;$('chapterPanel').hidden=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;paused=false;keys.clear();}
+function reset(){death=null;$('deathPanel').hidden=true;$('cloudButton').hidden=true;$('heavenBossHud').hidden=true;$('heavenWarning').hidden=true;$('practiceNext').hidden=true;clearTransformation();slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;effectRings.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;$('chapterPanel').hidden=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false,next=null){activeQuiz={...q,final,next};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
@@ -187,7 +187,7 @@ function updateCoronation(dt){
 function finish(){$('health').hidden=true;$('stamina').hidden=true;$('quest').hidden=true;mode='end';ending=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('pause').hidden=true;setSteps(2);const n=peaches.filter(p=>p.taken).length;$('ending').hidden=false;$('ending').innerHTML=`<span class="eyebrow">CHAPTER COMPLETE</span><h2>美 猴 王</h2><div class="cn-title">第一关 · 石破天惊，圆满完成</div><p>你为猴群寻得洞天，也赢得了他们的信任。</p><div class="stats"><div><strong>${n} / 12</strong><span>林间仙桃</span></div><div><strong>${score} / 3</strong><span>山海问答</span></div><div><strong>已发现</strong><span>水帘洞天</span></div></div><button class="primary" id="nextChapter">第二关 · 漂洋寻仙 →</button><button class="subtle" id="again">再游花果山 ↻</button>`;$('again').onclick=start;$('nextChapter').onclick=()=>startChapterTwo();$('status').textContent='第一关完成 · 美猴王诞生';$('hint').textContent='第一段旅程已完成，感谢你走进花果山。';unlockNextChapter(2,{phase:'cave',intro:true});tone(523,.3);setTimeout(()=>tone(784,.5),220);}
 function pause(){
   jumpRequestedUntil=-1;
-  if(['cover','end','gameover'].includes(mode))return;
+  if(['cover','end','gameover','dying'].includes(mode))return;
   if(paused&&!$('chapterPanel').hidden){closeChapterSelect();return;}
   paused=!paused;
   keys.clear();
@@ -256,8 +256,8 @@ $('chapterSelect').onclick=openChapterSelect;
 $('chapterBack').onclick=closeChapterSelect;
 for(let n=1;n<=CHAPTER_COUNT;n++)$('selectChapter'+n).onclick=()=>selectChapter(n);
 $('stage').addEventListener('click',e=>{if(e.target.closest('button'))return;advance();});
-window.addEventListener('keydown',e=>{if(paused&&e.code!=='Escape')return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.key===' ')e.preventDefault();if(e.repeat)return;if(mode==='book'&&!paused&&['ArrowLeft','ArrowRight'].includes(e.code)){flipBook(e.code==='ArrowLeft'?-1:1);return;}if(e.code==='Escape'){pause();return;}if(paused)return;if((e.code==='Space'||e.key===' ')&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'||e.key===' '||e.key==='ArrowUp'||e.key?.toLowerCase()==='w')jump();if(e.code==='KeyE')interact();if(e.code==='KeyF')castTransform();if(e.code==='KeyA')swingStaff();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end','gameover'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end','gameover'].includes(mode))pause();});
-document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();if(b.hasPointerCapture&&!b.hasPointerCapture(e.pointerId)){try{b.setPointerCapture(e.pointerId);}catch{}}keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();if(b.dataset.key==='KeyF')castTransform();if(b.dataset.key==='KeyA')swingStaff();});if(b.dataset.key==='Space')b.addEventListener('click',e=>{if(e.detail===0)jump();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
+window.addEventListener('keydown',e=>{if(paused&&e.code!=='Escape')return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.key===' ')e.preventDefault();if(e.repeat)return;if(mode==='book'&&!paused&&['ArrowLeft','ArrowRight'].includes(e.code)){flipBook(e.code==='ArrowLeft'?-1:1);return;}if(e.code==='Escape'){pause();return;}if(paused)return;if((e.code==='Space'||e.key===' ')&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'||e.key===' '||e.key==='ArrowUp'||e.key?.toLowerCase()==='w')jump();if(e.code==='KeyE')interact();if(e.code==='KeyF')castTransform();if(e.code==='KeyS')castCloud();if(e.code==='KeyA')swingStaff();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end','gameover','dying'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end','gameover','dying'].includes(mode))pause();});
+document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();if(b.hasPointerCapture&&!b.hasPointerCapture(e.pointerId)){try{b.setPointerCapture(e.pointerId);}catch{}}keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();if(b.dataset.key==='KeyF')castTransform();if(b.dataset.key==='KeyS')castCloud();if(b.dataset.key==='KeyA')swingStaff();});if(b.dataset.key==='Space')b.addEventListener('click',e=>{if(e.detail===0)jump();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
 function jump(){
   if(mode!=='play'||paused||slamActive||transformedForm?.flight)return;
   if(transformedForm?.id==='squirrel'&&nearClimbTree())return;
@@ -274,6 +274,7 @@ function applyJumpRequest(){
 }
 function update(dt){updateAmbience();
 if(paused)return;
+if(mode==='dying'){updateDeath(dt);return;}
 updateParticles(dt);
 if(chapter===2){updateChapterTwo(dt);return;}
 if(chapter===3){updateChapterThree(dt);return;}
@@ -555,7 +556,7 @@ function updateAmbience(){
     source.connect(filter).connect(water).connect(audio.destination);
     source.start();
   }
-  const quiet=muted||paused;
+  const quiet=muted||paused||mode==='dying'||mode==='gameover';
   if(!quiet&&chapter===4&&mode==='play'&&fourthScene==='escape'&&heavenBossEngaged&&heavenGuards.at(-1)?.hp>0){
     updateHeavenMusic();
   }
@@ -831,6 +832,7 @@ function startChapterTwo(saved){
 function openSecondRoute(quest){
   mode='play';
   $('spellButton').hidden=!learned||region==='hall';
+  $('cloudButton').hidden=!learned||region==='hall';
   $('practiceNext').hidden=!flightTrialDone||region==='hall';
   $('practiceNext').onclick=()=>{
     if(chapter===2&&region==='shore'&&mode==='play'&&!paused&&flightTrialDone)startChapterThree();
@@ -877,7 +879,7 @@ function enterBodhiArea(next,x){
   jumpRequestedUntil=-1;
   particles.length=0;
   $('area').textContent=next==='hall'?'斜月三星洞 · 祖师内堂':'西牛贺洲 · 灵台方寸山';
-  $('hint').textContent=next==='hall'?'向右走可见祖师，左侧大门可离开。':'在观外按 F 施展七十二变。';
+  $('hint').textContent=next==='hall'?'向右走可见祖师，左侧大门可离开。':'在观外按 F 变化，按 S 消耗 5 点灵气驾云。';
   openSecondRoute(bodhiQuest());
 }
 function interactChapterTwo(){
@@ -889,30 +891,52 @@ function meetBodhi(){
   chapterTwoDialogue([
     ['菩提祖师','你越海寻来，求的是什么？'],
     ['美猴王','弟子愿拜您为师，学习长生与变化之道。'],
-    ['菩提祖师','好。赐你姓孙，法名悟空。我传你七十二变，你到观外试试。'],
+    ['菩提祖师','好。赐你姓孙，法名悟空。我传你七十二变和驾云之法。出观后按 F 变化，按 S 唤筋斗云。'],
     {q:'菩提祖师给美猴王起了什么法名？',a:['悟净','悟能','悟空'],right:2,why:'菩提祖师赐他姓孙，法名悟空。'}
   ],()=>{
     learned=true;
     openSecondRoute(bodhiQuest());
   });
 }
+function canCastTravelSpell(){
+  return chapter>=2&&mode==='play'&&!paused&&!slamActive&&learned&&!transformedForm;
+}
 function castTransform(){
-  if(chapter<2||mode!=='play'||paused||slamActive||!learned||t<transformedUntil)return;
+  if(!canCastTravelSpell())return;
   if(chapter===2&&region==='hall'){toast('到观外再练习七十二变。');return;}
   if(chapter===4&&fourthScene==='stable')return;
   if(energy<2){toast('元气不足。沿路拾两颗仙桃再来试。');return;}
-  energy-=2;
-  renderEnergy();
-  transformedUntil=t+10;
   // Four equal intervals give every form a 25% chance on each cast.
-  transformedForm=forms[Math.floor(Math.random()*forms.length)];
-  $('flightDown').hidden=!transformedForm.flight&&transformedForm.id!=='squirrel';
-  $('hint').textContent=transformedForm.hint;
-  if(transformedForm.flight){player.vy=0;player.ground=false;}
+  const form=forms[Math.floor(Math.random()*forms.length)];
+  startTravelSpell(form,2,10);
+  toast('七十二变 · 化作'+form.name);
+}
+const cloudForm={
+  id:'cloud',name:'筋斗云',flight:true,speed:450,vertical:290,
+  hint:'驾筋斗云 · 方向键自由飞行，空格上升，↓ 下降。'
+};
+function castCloud(){
+  if(!canCastTravelSpell())return;
+  if((chapter===2&&region==='hall')||(chapter===4&&fourthScene==='stable')){
+    toast('到屋外再驾筋斗云。');
+    return;
+  }
+  if(energy<5){toast('驾筋斗云需要 5 点灵气。');return;}
+  startTravelSpell(cloudForm,5,20);
+  chirp(230,930,.42,0,.13,'triangle');
+  toast('筋斗云 · 20 秒自由飞行');
+}
+function startTravelSpell(form,cost,duration){
+  energy-=cost;
+  renderEnergy();
+  transformedUntil=t+duration;
+  transformedForm=form;
+  $('flightDown').hidden=!form.flight&&form.id!=='squirrel';
+  $('hint').textContent=form.hint;
+  if(form.flight){player.vy=0;player.ground=false;}
   scatter(player.x+12,player.y+15,42,['#fff0af','#efb767','#c4e3ac'],115);
   chirp(370,720,.35,0,.09,'triangle');
   saveCurrentCheckpoint();
-  toast('七十二变 · 化作'+transformedForm.name);
 }
 function updateChapterTwo(dt){
   if(mode==='voyage'){
@@ -1030,10 +1054,11 @@ function clearTransformation(){
 function updateTransformation(dt,route){
   if(!transformedForm)return false;
   if(t>=transformedUntil){
+    const wasCloud=transformedForm.id==='cloud';
     clearTransformation();
     $('counts').textContent=chapter>=3&&hasStaff?'如意金箍棒':'';
-    $('hint').textContent='F 随机变化，长按 Z 加速跑。';
-    if(chapter===2&&!flightTrialDone){
+    $('hint').textContent='F 七十二变，S 驾筋斗云，长按 Z 疾跑。';
+    if(chapter===2&&!flightTrialDone&&!wasCloud){
       flightTrialDone=true;
       finishChapterTwo();
       return true;
@@ -1043,7 +1068,7 @@ function updateTransformation(dt,route){
   $('counts').textContent=transformedForm.name+' '+Math.ceil(transformedUntil-t)+' 秒';
   const direction=Number(keys.has('ArrowRight')||keys.has('KeyD'))-Number(keys.has('ArrowLeft')||(chapter<3&&keys.has('KeyA')));
   const climb=keys.has('ArrowUp')||keys.has('KeyW')||keys.has('Space');
-  const descend=keys.has('ArrowDown')||keys.has('KeyS');
+  const descend=keys.has('ArrowDown')||(transformedForm.id!=='cloud'&&keys.has('KeyS'));
   if(transformedForm.flight){
     if(direction)player.face=direction;
     player.x=Math.max(0,Math.min(route.at(-1).x+route.at(-1).w-24,player.x+direction*transformedForm.speed*dt));
@@ -1361,6 +1386,24 @@ function drawBodhiHall(){
 
 function drawTransformation(camera){
   const {x,y,face,vx}=player;
+  if(transformedForm.id==='cloud'){
+    const center=x+12-camera, base=y+33, bob=Math.sin(t*13)*2;
+    const stream=keys.has('ArrowLeft')||keys.has('ArrowRight')||keys.has('KeyA')||keys.has('KeyD');
+    glow(center,base,56,'#f4d47b4c');
+    poly([[center-39,base+4+bob],[center-34,base-1+bob],[center-20,base-3+bob],
+      [center-13,base-10+bob],[center+3,base-10+bob],[center+11,base-6+bob],
+      [center+25,base-6+bob],[center+34,base+1+bob],[center+27,base+9+bob],
+      [center-24,base+10+bob]],'#ba8e59');
+    rect(center-34,base+1+bob,61,6,'#ebbe67');
+    rect(center-21,base-3+bob,47,6,'#ffe6a4');
+    rect(center-11,base-8+bob,23,5,'#fff2c7');
+    for(let i=0;i<5;i++){
+      const trail=center-face*(33+(i*13+t*220)%67);
+      rect(trail,base+3+i%3*3,stream?16:7,2,i%2?'#ffdd92a8':'#fff0c0b0');
+    }
+    monkey(center,y-4+bob,face,false,.91,false,chapter>=3&&hasStaff);
+    return;
+  }
   if(transformedForm.id==='crane'){
     drawCrane(x+12-camera,y+15,face);
     return;
@@ -1624,40 +1667,52 @@ function respawnPlayer(route){
   immuneUntil=t+.85;
 }
 function fallAndRespawn(route){
-  respawnPlayer(route);
   hurtPlayer(20);
-  if(health===0)loseLife(route);
-  else{
-    toast('坠落 · 生命 −20');
-    saveCurrentCheckpoint();
-  }
+  if(health===0){loseLife(route);return;}
+  respawnPlayer(route);
+  toast('坠落 · 生命 −20');
+  saveCurrentCheckpoint();
 }
 function loseLife(route){
-  lives--;
+  if(death||mode==='gameover')return;
+  lives=Math.max(0,lives-1);
   refreshHealth();
+  clearTransformation();
+  jumpRequestedUntil=-1;
   keys.clear();
-  respawnPlayer(route);
-  if(lives>0){
-    health=maxHealth;
-    refreshHealth();
-    toast('回到重生点 · 剩余 '+lives+' 条命');
-    saveCurrentCheckpoint();
-    return;
-  }
-  mode='gameover';
+  mode='dying';
+  death={route,left:1.9};
   $('touch').hidden=true;
-  $('ending').hidden=false;
-  $('ending').innerHTML='<span class="eyebrow">TRY AGAIN</span><h2>三条命已用完</h2><button id="retryCheckpoint" class="primary">从重生点再试 →</button>';
-  $('retryCheckpoint').onclick=()=>{
-    lives=3;
+  $('pause').hidden=true;
+  $('deathLives').textContent='剩余 '+lives+' 条命';
+  $('deathPanel').hidden=false;
+  chirp(151,62,.48,0,.10,'triangle');
+}
+function updateDeath(dt){
+  death.left-=dt;
+  if(death.left>0)return;
+  const {route}=death;
+  death=null;
+  $('deathPanel').hidden=true;
+  function revive(){
     health=maxHealth;
     refreshHealth();
     respawnPlayer(route);
     $('ending').hidden=true;
     $('touch').hidden=false;
+    $('pause').hidden=false;
+    keys.clear();
     mode='play';
     $('stage').focus?.({preventScroll:true});
     saveCurrentCheckpoint();
+  }
+  if(lives>0){revive();return;}
+  mode='gameover';
+  $('ending').hidden=false;
+  $('ending').innerHTML='<span class="eyebrow">TRY AGAIN</span><h2>三条命已用完</h2><button id="retryCheckpoint" class="primary">从重生点再试 →</button>';
+  $('retryCheckpoint').onclick=()=>{
+    lives=3;
+    revive();
   };
 }
 function drawDamageNumbers(){
@@ -1678,6 +1733,7 @@ function openThirdRoute(){
   $('touch').hidden=false;
   $('staffButton').hidden=!hasStaff;
   $('spellButton').hidden=false;
+  $('cloudButton').hidden=false;
   $('energy').hidden=false;
   $('stamina').hidden=false;
   renderStamina();
@@ -2725,6 +2781,7 @@ const fourthRoutes={
   cave:[{x:0,y:432,w:960}]
 };
 const fourthArea={clouds:'天庭 · 云阶',stable:'天庭 · 御马监',escape:'天庭 · 南天门外廊',cave:'花果山 · 水帘洞'};
+const heavenPeaches=[[212,388],[408,353],[631,311],[833,343],[1040,299],[1262,333],[1492,366]];
 const heavenlyHorses=[
   {x:289,coat:'#b27954',mane:'#604337',light:'#d8a471',shade:'#80583f'},
   {x:518,coat:'#ddd0ac',mane:'#9e8769',light:'#f6e7c2',shade:'#b1a283'},
@@ -2741,12 +2798,12 @@ const heavenPosts=[
   {id:'guard3',x:1190,min:1103,max:1283,y:402,kind:'flame',maxHp:35,damage:20,speed:91,...heavenSword},
   {id:'heaven-boss',x:1642,y:428,kind:'general',maxHp:200}
 ];
-let fourthScene='clouds', fedHorses=new Set(), heavenGuards=[], fourthComplete=false, fourthIntro=false;
+let fourthScene='clouds', fedHorses=new Set(), takenHeavenPeaches=new Set(), heavenGuards=[], fourthComplete=false, fourthIntro=false;
 let heavenFireballs=[], heavenBolts=[], heavenBossMove=null, heavenBossTurn=0, heavenBossReady=0;
 let heavenBossEngaged=false, heavenImpact=null, heavenMusicStep=0, heavenMusicAt=0;
 function saveChapterFour(){
   return writeGameSave({
-    chapter:4,phase:fourthScene,checkpoint,energy,fourthComplete,fed:[...fedHorses],
+    chapter:4,phase:fourthScene,checkpoint,energy,fourthComplete,fed:[...fedHorses],peaches:[...takenHeavenPeaches],
     defeated:heavenGuards.filter(guard=>guard.hp<=0).map(guard=>guard.id),...vitalSave()
   });
 }
@@ -2790,6 +2847,7 @@ function openFourthRoute(){
   $('touch').hidden=false;
   $('staffButton').hidden=fourthScene!=='escape';
   $('spellButton').hidden=fourthScene==='stable';
+  $('cloudButton').hidden=fourthScene==='stable';
   $('area').textContent=fourthArea[fourthScene];
   $('counts').textContent=fourthScene==='escape'?'如意金箍棒':'';
   $('hint').textContent={
@@ -2831,6 +2889,7 @@ function startChapterFour(saved){
   fourthComplete=!!saved?.fourthComplete;
   fourthIntro=!saved?.phase;
   fedHorses=new Set(saved?.fed||[]);
+  takenHeavenPeaches=new Set(saved?.peaches||[]);
   resetHeavenGuards(saved?.defeated);
   checkpoint=saved?.checkpoint??90;
   placePlayerOnGround(fourthRoutes[fourthScene],checkpoint);
@@ -2907,10 +2966,30 @@ function updateChapterFour(dt){
   if(updateTransformation(dt,route))player.x=Math.min(player.x,limit);
   else moveStaffPlayer(route,dt,limit);
   if(player.y>590){if(escaping)clearHeavenCombat();fallAndRespawn(route);return;}
+  if(fourthScene==='clouds'){
+    for(const [i,[x,y]] of heavenPeaches.entries()){
+      if(takenHeavenPeaches.has(i)||Math.abs(player.x+12-x)>26||Math.abs(player.y+17-y)>33)continue;
+      takenHeavenPeaches.add(i);
+      healFromPeach();
+      energy=Math.min(10,energy+1);
+      renderEnergy();
+      scatter(x,y,24,['#ffd39a','#f1a785','#f9edbd'],85);
+      tone(740,.09);
+      saveChapterFour();
+    }
+  }
   if(escaping){
     updateHeavenFireballs(dt);
+    const beforeX=heavenGuards.map(guard=>guard.x);
     updateDemons(dt,route,heavenGuards.slice(0,-1));
     updateHeavenBoss(dt);
+    for(const [i,guard] of heavenGuards.entries()){
+      const canWalk=guard.kind==='general'?!heavenBossMove&&guard.y===428:guard.ground;
+      const distance=canWalk?Math.abs(guard.x-beforeX[i]):0;
+      const speed=dt>0?Math.min(1,distance/(dt*70)):0;
+      guard.walkAmount=(guard.walkAmount??0)+(speed-(guard.walkAmount??0))*Math.min(1,dt*18);
+      guard.walkPhase=(guard.walkPhase??0)+distance*.17;
+    }
     if(health<=0){clearHeavenCombat();loseLife(route);return;}
     const quest=fourthQuest();
     if($('questTitle').textContent!==quest)chapterTwoQuest(quest);
@@ -3142,6 +3221,9 @@ function drawCloudRoad(c){
     drawHeavenHazards(c);
     for(const guard of heavenGuards)if(guard.hp>0)drawHeavenGuard(guard,c);
   }
+  if(!escaping){
+    for(const [i,[x,y]] of heavenPeaches.entries())if(!takenHeavenPeaches.has(i))peach(x-c,y);
+  }
   if(mode==='play'&&nearFourth(gate+c,escaping?72:55))drawBodhiLabel(escaping?'[ E ] 出南天门':'[ E ] 进入御马监',gate,ground-185);
 }
 function drawHeavenStable(c){
@@ -3210,7 +3292,7 @@ function drawHeavenHorse(horse,x,y,fed){
   rect(x+35,y-49+dip,6,2,horse.mane);rect(x+25,y-58+dip,2,12,'#c69b64');
   rect(x+35,y-51+dip,2,2,'#e5bd77');rect(x+25,y-50+dip,13,1,'#8f6247');
 }
-function drawHeavenOfficer(x,y,kind,face,attacking,bladeScale=1,swordAngle=attacking?-.8:.21){
+function drawHeavenOfficer(x,y,kind,face,attacking,bladeScale=1,swordAngle=attacking?-.8:.21,gait){
   ctx.save();
   ctx.translate(x,y);
   ctx.scale(face,1);
@@ -3218,7 +3300,17 @@ function drawHeavenOfficer(x,y,kind,face,attacking,bladeScale=1,swordAngle=attac
   const ink='#293840', trim=general?'#efbb6b':kind==='thunder'?'#afd6ee':'#edbd7d';
   const armor=keeper?'#80654b':general?'#9a4c43':kind==='thunder'?'#527a9a':'#ab6550';
   if(general)poly([[-11,-31],[-25,-24],[-29,-6],[-17,-9],[-7,-23]],'#783d49');
-  rect(-9,-9,6,9,ink);rect(4,-9,6,9,ink);
+  const pace=gait?.walkAmount??0;
+  const step=Math.sin(gait?.walkPhase??0)*pace;
+  for(const [hip,direction] of [[-8,-1],[6,1]]){
+    const stride=step*direction;
+    const toe=hip+stride*7;
+    const footY=-Math.max(0,stride)*6;
+    poly([[hip-3,-12],[hip+3,-12],[toe+3,footY-5],[toe+5,footY],[toe-4,footY]],ink);
+    rect(toe-2,footY-7,4,3,armor);
+    rect(toe-2,footY-3,6,2,trim);
+  }
+  if(!attacking)ctx.translate(0,-Math.abs(step)*1.7);
   poly([[-15,-5],[-13,-27],[-6,-34],[8,-34],[15,-25],[14,-5]],ink);
   poly([[-12,-8],[-11,-26],[-5,-31],[7,-31],[12,-25],[11,-8]],armor);
   rect(-11,-19,22,3,trim);rect(-8,-13,16,2,trim);
@@ -3248,7 +3340,7 @@ function drawHeavenOfficer(x,y,kind,face,attacking,bladeScale=1,swordAngle=attac
   }
   if(general)poly([[-6,-48],[-11,-56],[3,-60],[8,-55],[0,-49]],'#d7735e');
   ctx.translate(11,-20);
-  ctx.rotate(swordAngle);
+  ctx.rotate(swordAngle+(attacking?0:step*.15));
   rect(-1,-(keeper?21:6),3,keeper?26:11,'#8f684b');
   if(!keeper){
     ctx.save();
@@ -3269,11 +3361,26 @@ function drawHeavenGuard(guard,c){
     const move=heavenBossMove;
     if(move?.kind==='charge'&&move.rushing){
       drawHeavenFire(x,394,34);
-      for(let i=1;i<=5;i++)rect(x-guard.dir*(30+i*13),380+i*5,25,4,'#ffad577a');
+      for(let i=1;i<=8;i++){
+        const tail=x-guard.dir*(27+i*14);
+        const yy=394+Math.sin(t*23+i*.85)*18;
+        poly([[tail-22,yy+3],[tail,yy-2],[tail+guard.dir*19,yy],
+          [tail+7,yy+6]],i%2?'#ffae5eab':'#e76b49aa');
+        rect(tail,yy,8,2,'#fff4ac');
+      }
       return;
     }
     contactShadow(x,428,60);
-    if(move)glow(x,guard.y-55,85,move.kind==='lightning'?'#b6def576':'#ffc17b66');
+    if(move){
+      const electric=move.kind==='lightning';
+      glow(x,guard.y-55,85,electric?'#b6def576':'#ffc17b66');
+      for(let i=0;i<11;i++){
+        const turn=t*5+i*Math.PI*2/11;
+        const radius=30+(i%3)*10+Math.sin(t*8+i)*6;
+        const px=x+Math.cos(turn)*radius, py=guard.y-51+Math.sin(turn)*radius*.62;
+        rect(px,py,i%3?3:7,i%3?2:1,electric?'#e4f6ff':'#ffe4a4');
+      }
+    }
     ctx.save();
     ctx.translate(x,guard.y);
     ctx.scale(1.52,1.52);
@@ -3285,12 +3392,12 @@ function drawHeavenGuard(guard,c){
       poly([[-10,-4],[-33,-63],[-17,-93],[-1,-29],[30,-65],[20,-9]],'#ffb76350');
       glow(12,-18,58,'#ffd08075');
     }
-    drawHeavenOfficer(0,0,'general',guard.dir,!!move,growth,angle);
+    drawHeavenOfficer(0,0,'general',guard.dir,!!move,growth,angle,guard);
     ctx.restore();
     return;
   }
   if(guard.castAt)drawHeavenFire(x+guard.dir*14,guard.y-34,8+Math.sin(t*25)*2);
-  drawHeavenOfficer(x,guard.y,guard.kind,guard.dir,!!(guard.strikeAt||guard.castAt));
+  drawHeavenOfficer(x,guard.y,guard.kind,guard.dir,!!(guard.strikeAt||guard.castAt),1,undefined,guard);
   const barY=guard.y-54;
   rect(x-15,barY,30,3,'#494a4d');
   rect(x-15,barY,30*guard.hp/guard.maxHp,3,guard.kind==='thunder'?'#a4cde3':'#ed966d');
@@ -3352,7 +3459,14 @@ function drawHeavenHazards(c){
     const zig=[[x-12,0],[x+5,111],[x-9,174],[x+17,241],[x-4,319],[x+2,426]];
     poly([...zig,...zig.slice().reverse().map(([a,b])=>[a+6,b])],'#b9e8fd');
     poly([...zig,...zig.slice().reverse().map(([a,b])=>[a+2,b])],'#ffffe5');
+    const age=t-bolt.at;
+    for(const [height,side] of [[111,-1],[174,1],[241,-1],[319,1]]){
+      const reach=43+(height%5)*5+Math.sin(t*30+height)*9;
+      poly([[x,height],[x+side*reach*.52,height+15],[x+side*reach,height+11],
+        [x+side*reach*.54,height+19],[x,height+4]],'#c1e7ff');
+    }
     glow(x,416,68,'#a1dfff65');
+    rect(x-(12+age*90),424,24+age*180,2,'#e5f8ffc0');
   }
 }
 function drawFourthCave(c){
@@ -3554,37 +3668,46 @@ function finishHeavenBossMove(){
   $('heavenWarning').hidden=true;
 }
 
-const heavenMotif=[146.83,174.61,196,0,220,196,174.61,0,
-  146.83,0,196,220,261.63,220,196,0,
-  293.66,261.63,220,196,220,0,174.61,0,
-  196,174.61,146.83,0,130.81,146.83,0,0];
+const heavenMotif=[146.83,174.61,220,196,261.63,220,196,174.61,
+  146.83,0,196,220,293.66,261.63,220,0,
+  174.61,220,261.63,293.66,349.23,293.66,261.63,220,
+  196,174.61,220,196,130.81,146.83,174.61,0];
 
 function updateHeavenMusic(){
   if(t<heavenMusicAt)return;
-  heavenMusicAt=t+.235;
+  heavenMusicAt=t+.194;
   const beat=heavenMusicStep++%heavenMotif.length;
   const note=heavenMotif[beat];
-  if(beat%4===0)chirp(83,43,.19,0,.12);
-  if(beat%8===0){
-    const root=beat%16===0?73.42:65.41;
-    chirp(root,root,.43,0,.082,'triangle');
-    chirp(root*1.5,root*1.5,.35,0,.036,'triangle');
+  if(beat%4===0||beat%16===11){
+    chirp(100,43,.21,0,.20);
+    noiseHit(.13,.085,1100,110);
   }
+  if(beat%4===2)noiseHit(.12,.085,4900,740);
+  if(beat%2===1)noiseHit(.045,.040,8000,3000);
+  const root=beat<16?73.42:beat<24?87.31:65.41;
+  if(beat%2===0){
+    chirp(root*1.005,root,.18,0,.128,'triangle');
+    chirp(root/2,root/2,.17,0,.073);
+  }
+  if(beat%8===0)chirp(root*1.5,root*1.5,.47,0,.051,'triangle');
   if(note){
-    chirp(note*1.014,note,.21,0,.089,'triangle');
-    chirp(note*2,note*2,.13,0,.027);
+    chirp(note*1.026,note,.177,0,.138,'triangle');
+    chirp(note*2.02,note*2,.11,0,.043,'triangle');
+    if(beat%4===0)chirp(note*1.5,note*1.5,.17,0,.05);
   }
-  if(beat%8===6)noiseHit(.09,.048,3100,500);
 }
 function playHeavenSkillCue(kind){
   if(kind==='lightning'){
-    noiseHit(.29,.16,4300,1200);
-    chirp(342,810,.41,0,.12,'triangle');
+    noiseHit(.31,.24,6500,650);
+    chirp(360,1140,.42,0,.15,'triangle');
+    chirp(550,1240,.32,.06,.07,'sine');
   }else if(kind==='slam'){
-    chirp(110,57,.31,0,.19,'triangle');
-    noiseHit(.32,.15,650,125);
+    chirp(135,52,.4,0,.23,'triangle');
+    chirp(308,125,.28,.06,.095,'sawtooth');
+    noiseHit(.33,.21,1750,105);
   }else{
-    noiseHit(.34,.22,1400,5200);
-    chirp(93,233,.38,0,.12,'triangle');
+    noiseHit(.35,.29,1450,6800);
+    chirp(88,288,.43,0,.16,'triangle');
+    chirp(240,510,.3,.06,.075,'sawtooth');
   }
 }

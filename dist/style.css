@@ -53,3 +53,8 @@
 #heavenBossMeter{display:block;width:100%;height:9px;margin-top:3px;accent-color:#d66956}
 #heavenWarning{top:66px;padding:4px 12px;font-weight:700;font-size:13px;border-color:#d6aa72}
 @media(max-width:700px){#heavenBossHud{top:5px;width:34%;font-size:9px;padding:3px 4px}#heavenBossMeter{height:6px;margin-top:1px}#heavenWarning{top:67px;font-size:10px}}
+
+#deathPanel{z-index:9;background:#080a10cf;color:#f1dfc6;pointer-events:auto}
+#deathPanel h2{margin:0 0 12px;color:#f4b2a1;font-size:clamp(30px,7vw,66px);letter-spacing:.15em;text-shadow:0 3px 0 #461e25}
+#deathLives{margin:0;font-size:clamp(13px,2.8vw,20px);letter-spacing:.12em}
+@media(max-width:440px){#touch{left:7px;right:7px}#touch>div{gap:3px}#touch button{width:clamp(25px,8.5vw,36px);padding:0;font-size:10px}}
