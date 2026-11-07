@@ -798,7 +798,7 @@ const thirdRoutes={
 };
 let thirdScene='mountain', hasStaff=false, namesCleared=false, trained=false, dragonSpoken=false, returnedFromUnderworld=false;
 const SLAM_WINDUP=.36;
-let slamActive=false, slamImpact=null;
+let slamActive=false, slamImpact=null, slamStartY=0;
 let health=100, maxHealth=100, lives=3, immuneUntil=0, combo=0, swingAt=-Infinity, swingFacing=1;
 let bookPage=0, demons=[];
 const damageNumbers=[];
@@ -1130,6 +1130,7 @@ function swingStaff(){
     stamina-=50;
     renderStamina();
     slamActive=true;
+    slamStartY=player.y;
     combo=0;
     swingAt=t;
     swingFacing=player.face;
@@ -1271,6 +1272,8 @@ function updateChapterThree(dt){
   }
   const charging=slamActive&&t-swingAt<SLAM_WINDUP;
   if(charging){
+    const progress=Math.max(0,Math.min(1,(t-swingAt)/SLAM_WINDUP));
+    player.y=Math.max(0,slamStartY-32*Math.sin(progress*Math.PI/2));
     player.vx=0;
     player.vy=0;
   }else{

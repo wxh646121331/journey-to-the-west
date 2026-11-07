@@ -134,7 +134,7 @@ stamina=90;swingStaff();
 if(!slamActive||stamina!==40||slamTarget.hp!==36)throw Error('Slam activation');
 const chargeY=player.y;
 t+=.16;update(1/60);
-if(player.y!==chargeY||player.vy!==0||!slamActive)throw Error('Air slam windup');
+if(player.y>=chargeY||player.vy!==0||!slamActive)throw Error('Air slam windup must lift Wukong');
 for(let i=0;i<80&&slamActive;i++){t+=1/120;update(1/120);}
 if(slamActive||slamTarget.hp!==6||damageNumbers.at(-1).amount!==30)throw Error('Slam landing damage');
 Object.assign(player,{x:1510,y:396,vy:0,ground:true});update(1/60);advance();advance();
