@@ -796,6 +796,11 @@ const thirdRoutes={
     {x:794,y:427,w:205},{x:1040,y:390,w:178},{x:1260,y:430,w:590}
   ]
 };
+const royalHalls={
+  palace:{door:694,throne:916,floor:373,throneFloor:417,name:'水晶宫',ruler:'龙王'},
+  underworld:{door:1355,throne:1520,floor:430,throneFloor:430,name:'森罗殿',ruler:'阎王'}
+};
+let hallEntered=false;
 let thirdScene='mountain', hasStaff=false, namesCleared=false, trained=false, dragonSpoken=false, returnedFromUnderworld=false;
 const SLAM_WINDUP=.36;
 let slamActive=false, slamImpact=null, slamStartY=0;
@@ -816,7 +821,7 @@ const deathBook=[
 function saveChapterThree(state){
   try{
     localStorage.setItem(SAVE,JSON.stringify({
-      chapter:3,scene:thirdScene,hasStaff,energy,thirdPeaches:[...thirdPeachesTaken],trained,dragonSpoken,namesCleared,returnedFromUnderworld,checkpoint,...vitalSave(),...state
+      chapter:3,scene:thirdScene,hallEntered,hasStaff,energy,thirdPeaches:[...thirdPeachesTaken],trained,dragonSpoken,namesCleared,returnedFromUnderworld,checkpoint,...vitalSave(),...state
     }));
   }catch{}
 }
@@ -857,7 +862,12 @@ function startChapterThree(saved){
   dragonSpoken=!!saved?.dragonSpoken||hasStaff;
   returnedFromUnderworld=thirdScene==='mountain'&&!saved?.intro&&!!saved?.returnedFromUnderworld;
   namesCleared=(thirdScene==='underworld'||returnedFromUnderworld)&&!!saved?.namesCleared;
-  checkpoint=saved?.intro?90:(saved?.checkpoint??90);
+  const hall=royalHalls[thirdScene];
+  const savedX=saved?.intro?90:(saved?.checkpoint??90);
+  hallEntered=!!hall&&!saved?.intro&&(
+    saved?.hallEntered??(thirdScene==='palace'?dragonSpoken:namesCleared||savedX>=1490)
+  );
+  checkpoint=hall&&!hallEntered?Math.min(savedX,hall.door-24):savedX;
   restoreVitals(saved,hasStaff?150:100);
   immuneUntil=0;
   swingAt=-Infinity;
@@ -986,11 +996,13 @@ function openThirdRoute(){
     : thirdScene==='palace'
       ? hasStaff?'击退虾兵蟹将，返回花果山':dragonSpoken?'前往海藏，取定海神针':'走近龙王的宝座'
       : namesCleared?'原路返回幽冥入口，回花果山':'穿过幽冥，去阎王宝座前';
-  chapterTwoQuest(quest);
+  const hall=royalHalls[thirdScene];
+  chapterTwoQuest(hall&&!hallEntered?'走到'+hall.name+'门前，按 E 入殿':quest);
   saveChapterThree();
 }
 function switchThirdScene(scene,x=90){
   thirdScene=scene;
+  hallEntered=false;
   checkpoint=x;
   cam=Math.max(0,Math.min(930,x-315));
   placePlayerOnGround(thirdRoutes[scene],x);
@@ -1041,8 +1053,18 @@ function interactChapterThree(){
     }else toast($('questTitle').textContent);
     return;
   }
+  const hall=royalHalls[thirdScene];
+  if(hall&&!hallEntered){
+    if(atRoyalDoor(hall)){
+      hallEntered=true;
+      checkpoint=hall.door-24;
+      noiseHit(.25,.10,620,170);
+      openThirdRoute();
+    }else toast($('questTitle').textContent);
+    return;
+  }
   if(thirdScene==='palace'){
-    if(!dragonSpoken&&player.x>=820&&player.x<=1040){meetDragon();return;}
+    if(!dragonSpoken&&atRoyalThrone(hall)){meetDragon();return;}
     if(hasStaff&&player.x<180){
       if(demons.some(demon=>demon.hp>0)){toast('先击退龙宫追兵，再返回花果山。');return;}
       returnFromPalace();return;
@@ -1065,7 +1087,7 @@ function interactChapterThree(){
     }else toast($('questTitle').textContent);
     return;
   }
-  if(!namesCleared&&player.x>=1490&&player.x<=1585&&player.ground){
+  if(!namesCleared&&atRoyalThrone(hall)){
     meetUnderworldKing();
     return;
   }
@@ -1261,10 +1283,19 @@ function updateDemons(dt){
     if(demon.y>570){demon.x=demon.min+8;demon.y=318;demon.vy=0;demon.landing=null;}
   }
 }
+function atRoyalDoor(hall){
+  return player.ground&&Math.abs(player.x+player.w-hall.door)<=47;
+}
+function atRoyalThrone(hall){
+  return hallEntered&&player.ground&&Math.abs(player.x+12-hall.throne)<=64;
+}
 function updateChapterThree(dt){
   if(mode!=='play')return;
   const route=thirdRoutes[thirdScene];
+  const hall=royalHalls[thirdScene];
+  const doorLimit=hall&&!hallEntered?hall.door-player.w:Infinity;
   if(updateFlight(dt,route)){
+    player.x=Math.min(player.x,doorLimit);
     if(thirdScene==='palace'&&!dragonSpoken)player.x=Math.min(player.x,1020);
     if(thirdCombatActive())updateDemons(dt);
     if(health===0){transformedUntil=0;$('flightDown').hidden=true;loseLife(route);}
@@ -1284,13 +1315,13 @@ function updateChapterThree(dt){
         noiseHit(.27,.23,3600,310);
       }
     }else updateRun(dt);
-    const limit=thirdScene==='palace'&&!dragonSpoken?1030:Infinity;
+    const limit=Math.min(doorLimit,thirdScene==='palace'&&!dragonSpoken?1030:Infinity);
     moveOnPlatforms(route,dt,limit);
   }
   if(slamActive&&player.ground)landStaffSlam();
-  if(thirdScene==='palace'&&!dragonSpoken&&player.x>=835&&player.x<=1040&&player.ground){meetDragon();return;}
+  if(thirdScene==='palace'&&!dragonSpoken&&atRoyalThrone(hall)){meetDragon();return;}
   if(thirdScene==='underworld'&&!namesCleared){
-    if(player.ground&&player.x>=1490&&player.x<=1585){meetUnderworldKing();return;}
+    if(atRoyalThrone(hall)){meetUnderworldKing();return;}
     updateDemons(dt);
   }
   if(thirdScene==='palace'&&hasStaff)updateDemons(dt);
@@ -1361,16 +1392,8 @@ function drawChapterThree(){
     drawThirdThrone(120-c,434,'#5f7461','#9da782');
     drawCaveBridge(c);
   }
-  const hall=(sea?885:1510)-c;
-  if(!mountainScene){
-  rect(hall-125,250,377,191,sea?'#224d59':'#3e283d');
-  poly([[hall-156,250],[hall+53,175],[hall+279,250]],sea?'#3e7d83':'#63384a');
-  rect(hall-150,246,420,7,sea?'#d8be79':'#b47d62');
-  for(const x of [hall-99,hall+28,hall+168]){
-    rect(x,259,17,173,sea?'#7bb2a9':'#85545d');
-    rect(x-3,256,23,7,sea?'#c7be83':'#c98d73');
-  }
-  }
+  const hall=royalHalls[thirdScene];
+  if(hall)drawRoyalHall(hall,c,sea);
   for(const floor of thirdRoutes[thirdScene]){
     const x=floor.x-c;
     const river=mountainScene&&floor.y===454;
@@ -1394,10 +1417,8 @@ function drawChapterThree(){
       ctx.save();ctx.translate(x+9,415);ctx.rotate(angle);
       rect(0,-22,3,24,'#dac19a');ctx.restore();
     }
-  }else if(sea){
-    const x=916-c;
-    drawThirdThrone(x,417,'#6c9183','#d6ba78');
-    drawRoyal(x,405,true);
+  }else if(hallEntered&&sea){
+    drawRoyalAudience(hall,c,true);
     if(!hasStaff){
       const shrinking=dragonSpoken&&player.x>=1550&&mode==='talk'&&secondDialogueLine===2;
       ctx.save();
@@ -1405,9 +1426,8 @@ function drawChapterThree(){
       drawDivineIron(1605-c);
       ctx.restore();
     }
-  }else{
-    drawThirdThrone(1520-c,430,'#633f50','#bc8467');
-    drawRoyal(1520-c,415,false);
+  }else if(hallEntered){
+    drawRoyalAudience(hall,c,false);
     rect(1552-c,394,47,36,'#63495a');
     rect(1554-c,383,43,13,namesCleared?'#a99480':'#e7d8ac');
     rect(1575-c,383,2,13,'#806b60');
@@ -1456,11 +1476,13 @@ function drawChapterThree(){
     if(returnedFromUnderworld&&player.x>=235&&player.x<=490)label='与猴群交谈';
     if(!returnedFromUnderworld&&!trained&&player.x>=235&&player.x<=490)label='操练猴群';
     if(!returnedFromUnderworld&&trained&&player.x>=1010&&player.x<=1192&&player.ground&&player.y+player.h===454)label='潜入小河';
+  }else if(!hallEntered){
+    if(atRoyalDoor(hall))label='进入'+hall.name;
   }else if(sea){
     if(dragonSpoken&&!hasStaff&&player.x>=1550)label='取定海神针';
     if(hasStaff&&player.x<180)label='返回花果山';
   }else{
-    if(!namesCleared&&player.x>=1490)label='拜见阎王';
+    if(!namesCleared&&atRoyalThrone(hall))label='拜见阎王';
     if(namesCleared&&player.x<=155)label='回花果山';
   }
   if(label&&mode==='play'){
@@ -1484,23 +1506,100 @@ function drawCaveBridge(camera){
   rect(left,424,19,14,'#657761');
   rect(left+231,424,19,14,'#657761');
 }
+function drawRoyalHall(hall,c,sea){
+  const door=hall.door-c;
+  const floor=hall.floor;
+  const trim=sea?'#e3c486':'#d5a26e';
+  const wall=sea?'#234a53':'#492d3b';
+  const column=sea?'#548b86':'#8e5760';
+  if(!hallEntered){
+    const left=door-30;
+    rect(left,floor-177,450,177,wall);
+    poly([[left-42,floor-172],[left+7,floor-207],[left+174,floor-223],
+      [left+351,floor-207],[left+487,floor-172]],sea?'#366c6d':'#733b4a');
+    rect(left-42,floor-172,529,5,trim);
+    rect(left+9,floor-149,65,149,'#142c30');
+    rect(left+15,floor-143,52,143,sea?'#2f6262':'#654055');
+    rect(left+40,floor-142,3,142,trim);
+    rect(left+22,floor-64,4,9,trim);rect(left+56,floor-64,4,9,trim);
+    rect(left+2,floor-166,78,17,'#263238');
+    ctx.fillStyle=trim;
+    ctx.font='bold 12px serif';
+    ctx.fillText(hall.name,left+21,floor-154);
+    for(let i=0;i<4;i++){
+      const x=left+94+i*91;
+      rect(x,floor-163,10,163,column);
+      rect(x-4,floor-160,18,4,trim);
+      rect(x-4,floor-8,18,8,trim);
+      rect(x+21,floor-135,41,58,'#172b30');
+      for(let bar=0;bar<4;bar++)rect(x+25+bar*9,floor-130,2,48,column);
+    }
+    return;
+  }
+  const right=hall.throne-c+360;
+  rect(door,161,right-door,272,wall);
+  rect(door,161,right-door,11,trim);
+  rect(door,177,right-door,4,sea?'#749e8a':'#915c64');
+  for(let i=0;i<6;i++){
+    const x=door+16+i*99;
+    rect(x,182,13,249,column);
+    rect(x-4,184,21,7,trim);
+    rect(x-3,410,19,7,trim);
+    rect(x+34,190,3,22,trim);
+    rect(x+26,210,20,20,sea?'#80bdb0':'#b56f61');
+    rect(x+29,214,14,11,'#f2ca8c');
+  }
+}
+function drawRoyalAudience(hall,c,dragon){
+  const x=hall.throne-c;
+  const floor=hall.throneFloor;
+  const gold=dragon?'#ead099':'#d49a68';
+  rect(x-75,floor-127,150,104,dragon?'#326667':'#643d4c');
+  rect(x-75,floor-127,150,3,gold);
+  rect(x-62,floor-116,4,86,gold);
+  rect(x+58,floor-116,4,86,gold);
+  for(let i=0;i<4;i++){
+    const y=floor-16+i*4;
+    rect(x-45-i*6,y,90+i*12,4,i%2?gold:dragon?'#4c776d':'#78515e');
+  }
+  ctx.save();
+  ctx.translate(x,floor-10);
+  ctx.scale(1.38,1.38);
+  drawThirdThrone(0,0,dragon?'#4c8679':'#664355',gold);
+  drawRoyal(0,-12,dragon);
+  ctx.restore();
+}
 function drawRoyal(x,y,dragon){
   const robe=dragon?'#457d72':'#765266';
   const trim=dragon?'#d9b36d':'#d4a875';
   poly([[x-16,y],[x-13,y-24],[x-7,y-29],[x+8,y-29],[x+16,y-23],[x+20,y]],robe);
   rect(x-15,y-7,33,3,trim);
   rect(x-4,y-27,8,18,dragon?'#79b2a1':'#a47277');
+  rect(x-13,y-22,4,12,trim);rect(x+11,y-22,4,12,trim);
+  for(let i=0;i<3;i++){
+    rect(x-12+i*11,y-13-(i%2)*5,5,2,trim);
+    rect(x-10+i*11,y-15-(i%2)*5,1,6,trim);
+  }
+  rect(x-3,y-17,6,6,trim);
+  rect(x-1,y-16,2,4,dragon?'#477d6a':'#8b4651');
   rect(x-9,y-44,19,17,dragon?'#c1aa72':'#d5a98a');
   rect(x-6,y-38,3,2,'#302f3a');rect(x+5,y-38,3,2,'#302f3a');
   if(dragon){
     poly([[x-9,y-46],[x-15,y-56],[x-13,y-63],[x-10,y-53],[x-4,y-47]],trim);
     poly([[x+7,y-46],[x+14,y-55],[x+13,y-63],[x+18,y-56],[x+12,y-45]],trim);
+    rect(x-12,y-44,5,7,'#748f70');rect(x+9,y-44,5,7,'#748f70');
+    rect(x-6,y-42,4,2,trim);rect(x+4,y-42,5,2,trim);
     rect(x-5,y-34,18,6,'#d5ba80');
+    rect(x+8,y-33,2,1,'#77604e');
+    rect(x-3,y-28,12,2,'#f1d2a2');
     poly([[x-4,y-30],[x-10,y-17],[x-7,y-15],[x+2,y-28]],'#e8dfc1');
     poly([[x+10,y-30],[x+17,y-17],[x+14,y-15],[x+5,y-28]],'#e8dfc1');
   }else{
     rect(x-15,y-49,30,5,'#392c42');
     rect(x-9,y-54,18,5,'#4d3548');
+    rect(x-13,y-48,26,2,trim);
+    rect(x-2,y-54,4,5,'#c17a67');
+    rect(x-8,y-41,6,2,'#4c3840');rect(x+3,y-41,6,2,'#4c3840');
     for(let i=0;i<5;i++)rect(x-12+i*6,y-45,1,8,trim);
     poly([[x-7,y-32],[x+9,y-32],[x+6,y-19],[x+1,y-15],[x-5,y-21]],'#3f3542');
   }
