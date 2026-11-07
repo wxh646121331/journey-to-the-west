@@ -601,6 +601,7 @@ function nearClimbTree(){
   return currentClimbTrees().find(trunk=>Math.abs(player.x+12-trunk.x)<=24&&
     player.y+player.h>=trunk.y-121&&player.y+player.h<=trunk.y+5);
 }
+const bodhiHall={door:1750,entry:98,teacher:808,floor:426,width:1120};
 const secondRoutes={
   cave:[
     {x:-70,y:432,w:690},{x:650,y:425,w:145},{x:835,y:389,w:140},
@@ -610,11 +611,13 @@ const secondRoutes={
     {x:-80,y:442,w:450},{x:480,y:411,w:112},{x:650,y:379,w:111,motion:{center:657,range:45,phase:0}},
     {x:850,y:415,w:168},{x:1102,y:386,w:164},{x:1361,y:427,w:153,motion:{center:1361,range:22,phase:1.8}},
     {x:1600,y:400,w:320}
-  ]
+  ],
+  hall:[{x:0,y:bodhiHall.floor,w:bodhiHall.width}]
 };
 const secondPeaches={
   cave:[[300,394],[704,389],[888,351],[1070,385],[1259,349],[1470,394]],
-  shore:[[221,402],[530,375],[56,341],[873,375],[1140,350],[49,390],[1640,363],[1810,363]]
+  shore:[[221,402],[530,375],[56,341],[873,375],[1140,350],[49,390],[1640,363],[1810,363]],
+  hall:[]
 };
 const shoreTraps=[
   {x:928,y:415,w:54,offset:0},
@@ -662,15 +665,15 @@ function startChapterTwo(saved){
   reset();
   chapter=2;
   restoreVitals(saved);
-  region=saved?.phase==='shore'?'shore':'cave';
+  region=saved?.phase==='hall'||saved?.phase==='shore'?saved.phase:'cave';
   energy=Math.max(0,Math.min(10,saved?.energy||0));
-  learned=region==='shore'&&!!saved?.learned;
+  learned=region!=='cave'&&!!saved?.learned;
   flightTrialDone=!!saved?.flightTrialDone;
   collected=new Set(saved?.peaches||[]);
   transformedUntil=0;
   voyageTime=0;
   dockWait=0;
-  checkpoint=saved?.checkpoint??90;
+  checkpoint=region==='hall'?bodhiHall.entry:(saved?.checkpoint??90);
   if(region==='shore'&&checkpoint===1550)checkpoint=1640;
   placePlayerOnGround(secondRoutes[region],checkpoint);
   $('cover').hidden=true;
@@ -683,8 +686,8 @@ function startChapterTwo(saved){
   $('counts').textContent='';
   $('hint').textContent='仙桃补充元气。学会变化后，可按 F 施法。';
   renderEnergy();
-  if(region==='shore'){
-    openSecondRoute(learned?'消耗 2 点元气，试一次七十二变':'拜见菩提祖师');
+  if(region!=='cave'){
+    openSecondRoute(bodhiQuest());
     return;
   }
   if(saved?.checkpoint){
@@ -702,9 +705,10 @@ function startChapterTwo(saved){
 }
 function openSecondRoute(quest){
   mode='play';
-  $('practiceNext').hidden=!flightTrialDone;
+  $('spellButton').hidden=!learned||region==='hall';
+  $('practiceNext').hidden=!flightTrialDone||region==='hall';
   $('practiceNext').onclick=()=>{
-    if(chapter===2&&mode==='play'&&!paused&&flightTrialDone)startChapterThree();
+    if(chapter===2&&region==='shore'&&mode==='play'&&!paused&&flightTrialDone)startChapterThree();
   };
   showHealth();
   $('stamina').hidden=false;renderStamina();
@@ -729,24 +733,47 @@ function arriveAcrossSea(){
     ['西牛贺洲','岸边有人指向远山。山中有一处洞府，名为斜月三星洞。']
   ],()=>openSecondRoute('拜见菩提祖师'));
 }
+function bodhiQuest(){
+  if(region==='hall')return learned?'出观练习七十二变':'向右走，拜见菩提祖师';
+  return learned?'拾桃补充元气，按 F 施展七十二变':'拜见菩提祖师';
+}
+function nearBodhiDoor(){
+  return player.ground&&Math.abs(player.x+12-bodhiHall.door)<=36;
+}
+function nearBodhiExit(){
+  return player.ground&&Math.abs(player.x+12-bodhiHall.entry)<=48;
+}
+function enterBodhiArea(next,x){
+  region=next;
+  checkpoint=x;
+  placePlayerOnGround(secondRoutes[next],x);
+  cam=next==='hall'?0:Math.min(1010,x-320);
+  keys.clear();
+  jumpRequestedUntil=-1;
+  particles.length=0;
+  $('area').textContent=next==='hall'?'斜月三星洞 · 祖师内堂':'西牛贺洲 · 灵台方寸山';
+  $('hint').textContent=next==='hall'?'向右走可见祖师，左侧大门可离开。':'在观外按 F 施展七十二变。';
+  openSecondRoute(bodhiQuest());
+}
 function interactChapterTwo(){
   if(transformedForm){toast('恢复原形后即可互动。');return;}
-  if(region!=='shore'||player.x<1680)return;
-  if(learned){toast('按 F 或点击「变化」施法，消耗 2 点元气。');return;}
+  if(region==='shore'&&nearBodhiDoor())enterBodhiArea('hall',bodhiHall.entry);
+  else if(region==='hall'&&nearBodhiExit())enterBodhiArea('shore',bodhiHall.door-68);
+}
+function meetBodhi(){
   chapterTwoDialogue([
     ['菩提祖师','你越海寻来，求的是什么？'],
     ['美猴王','弟子愿拜您为师，学习长生与变化之道。'],
-    ['菩提祖师','好。赐你姓孙，法名悟空。今日先试一试七十二变。'],
+    ['菩提祖师','好。赐你姓孙，法名悟空。我传你七十二变，你到观外试试。'],
     {q:'菩提祖师给美猴王起了什么法名？',a:['悟净','悟能','悟空'],right:2,why:'菩提祖师赐他姓孙，法名悟空。'}
   ],()=>{
     learned=true;
-    checkpoint=1640;
-    $('spellButton').hidden=false;
-    openSecondRoute('拾桃补充元气，按 F 施展七十二变');
+    openSecondRoute(bodhiQuest());
   });
 }
 function castTransform(){
   if(chapter<2||mode!=='play'||paused||slamActive||!learned||t<transformedUntil)return;
+  if(chapter===2&&region==='hall'){toast('到观外再练习七十二变。');return;}
   if(energy<2){toast('元气不足。沿路拾两颗仙桃再来试。');return;}
   energy-=2;
   renderEnergy();
@@ -778,7 +805,7 @@ function updateChapterTwo(dt){
     checkShoreTraps(route);
     if(mode!=='play')return;
     if(p.ground&&p.x>1640&&checkpoint<1600){checkpoint=1640;chapterTwoSave();}
-  }else if(p.ground&&p.x>1430&&p.x<1510&&checkpoint<1430){
+  }else if(region==='cave'&&p.ground&&p.x>1430&&p.x<1510&&checkpoint<1430){
     checkpoint=1440;
     chapterTwoSave();
   }
@@ -796,6 +823,12 @@ function updateChapterTwo(dt){
     tone(740,.09);
     chapterTwoSave();
   });
+  if(region==='hall'){
+    cam+=(Math.max(0,Math.min(bodhiHall.width-W,p.x-490))-cam)*Math.min(1,dt*7);
+    $('area').textContent='斜月三星洞 · 祖师内堂';
+    if(!learned&&p.ground&&Math.abs(p.x+12-bodhiHall.teacher)<=78)meetBodhi();
+    return;
+  }
   cam+=(Math.max(0,Math.min(1010,p.x-320))-cam)*Math.min(1,dt*7);
   $('area').textContent=region==='shore'?'西牛贺洲 · 灵台方寸山':p.x<600?'花果山 · 水帘洞':'花果山 · 出海山道';
   if(region==='cave'&&p.x>1580&&p.ground){
@@ -979,6 +1012,7 @@ function drawSailboat(x,y){
   poly([[x-7,y-66],[x-7,y-12],[x-40,y-16]],'#bb895e');
 }
 function drawChapterTwo(){
+  if(region==='hall'){drawBodhiHall();return;}
   drawBackground();
   const sailing=mode==='voyage';
   const c=sailing?0:cam;
@@ -1026,20 +1060,8 @@ function drawChapterTwo(){
     rect(351-c,405,9,27,'#657960');
     rect(392-c,405,9,27,'#657960');
     drawSailboat(1728-c,450+Math.sin(t*3)*2);
-  }else{
-    const shrine=1770-c;
-    rect(shrine-56,269,132,131,'#485a46');
-    poly([[shrine-83,271],[shrine+10,214],[shrine+100,271]],'#244b40');
-    rect(shrine-65,268,152,8,'#a0a477');
-    rect(shrine-18,316,55,84,'#203c33');
-    rect(shrine-23,306,65,11,'#b0a876');
-    rect(shrine+56,283,5,38,'#917d52');
-    rect(shrine+49,310,19,21,'#e5b56b');
-    const master=1730-c;
-    rect(master-8,377,19,23,'#a3a57e');
-    rect(master-6,365,15,13,'#e3cba0');
-    rect(master-8,362,18,5,'#e8d9b2');
-    rect(master,374,7,13,'#dbd3b3');
+  }else if(bodhiHall.door-c<W+130){
+    drawBodhiExterior(bodhiHall.door-c,400);
   }
   for(const floor of secondRoutes[region]){
     const x=floor.x-c;
@@ -1067,11 +1089,146 @@ function drawChapterTwo(){
     monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx);
   }
   drawParticles(c);
-  if(mode==='play'&&region==='shore'&&player.x>1640){
-    ctx.fillStyle='#fff0c5';
-    ctx.font='14px sans-serif';
-    ctx.fillText(learned?'[ F ] 七十二变':'[ E ] 拜见菩提祖师',1680-c,318);
+  if(mode==='play'&&region==='shore'&&nearBodhiDoor()&&!transformedForm){
+    drawBodhiLabel('[ E ] 进入道观',bodhiHall.door-c,277);
   }
+}
+
+function drawBodhiLabel(label,x,y){
+  ctx.save();
+  ctx.font='14px sans-serif';
+  ctx.textAlign='center';
+  const width=Math.ceil(ctx.measureText(label).width)+20;
+  rect(x-width/2,y-17,width,25,'#243d35ee');
+  rect(x-width/2,y-17,width,1,'#c4a66d');
+  ctx.fillStyle='#fff0c5';
+  ctx.fillText(label,x,y);
+  ctx.restore();
+}
+
+function drawBodhiExterior(x,floor){
+  rect(x-106,floor-118,212,109,'#d8c6a0');
+  rect(x-106,floor-115,212,12,'#ad906c');
+  rect(x-111,floor-17,222,13,'#64756d');
+  for(const dx of [-99,-48,40,91]){
+    rect(x+dx,floor-123,9,113,'#713f37');
+    rect(x+dx+6,floor-121,2,106,'#a3634b');
+    rect(x+dx-2,floor-20,13,8,'#a9a08a');
+  }
+  for(const dx of [-86,56]){
+    rect(x+dx,floor-86,29,44,'#365852');
+    rect(x+dx+3,floor-82,23,36,'#d1a66f');
+    for(let i=0;i<4;i++)rect(x+dx+5+i*6,floor-82,2,36,'#674736');
+    for(let i=0;i<3;i++)rect(x+dx+3,floor-77+i*10,23,2,'#674736');
+  }
+  rect(x-29,floor-87,58,77,'#5a3932');
+  rect(x-22,floor-81,44,71,'#233630');
+  rect(x-22,floor-81,6,71,'#835342');
+  rect(x+16,floor-81,6,71,'#9f6f50');
+  rect(x-44,floor-10,88,4,'#acaa91');
+  rect(x-51,floor-6,102,6,'#808c7e');
+  // The stepped ridge and raised corners outline the two tiled eaves.
+  drawBodhiRoof(x,floor-116,126,54);
+  drawBodhiRoof(x,floor-154,75,32);
+  rect(x-36,floor-110,72,22,'#694638');
+  rect(x-33,floor-108,66,18,'#243e36');
+  ctx.save();
+  ctx.font='bold 12px serif';
+  ctx.textAlign='center';
+  ctx.fillStyle='#e9ca87';
+  ctx.fillText('斜月三星洞',x,floor-95);
+  ctx.restore();
+  for(const dx of [-58,58])drawBodhiLantern(x+dx,floor-109);
+}
+
+function drawBodhiRoof(x,y,half,height){
+  const ridge=y-height;
+  poly([[x-half-8,y-10],[x-half+10,y-5],[x-half+37,y-15],[x-25,ridge],
+    [x+24,ridge],[x+half-37,y-15],[x+half-10,y-5],[x+half+8,y-10],
+    [x+half-4,y],[x-half+4,y]],'#1d393a');
+  for(let i=1;i<=3;i++){
+    const reach=24+(half-35)*i/4;
+    const row=ridge+(height-7)*i/4;
+    rect(x-reach,row,reach*2,2,i%2?'#4d7771':'#3c625e');
+    for(let j=-reach+8;j<reach-5;j+=12)rect(x+j,row+2,2,5,'#304f50');
+  }
+  rect(x-27,ridge-2,54,4,'#87a492');
+  rect(x-half+5,y-2,half*2-10,4,'#aa8b65');
+}
+
+function drawBodhiLantern(x,y){
+  rect(x-1,y,2,12,'#b79866');
+  rect(x-7,y+11,14,15,'#803c37');
+  rect(x-5,y+13,10,11,'#de8050');
+  rect(x-2,y+13,4,11,'#f5b368');
+  rect(x-5,y+25,10,2,'#e0ae65');
+  rect(x-1,y+27,2,6,'#d4744f');
+}
+
+function drawBodhiHall(){
+  const c=cam, floor=bodhiHall.floor;
+  rect(0,0,W,H,lightGradient(0,0,0,H,[[0,'#282e2b'],[.4,'#66503a'],[1,'#9c7756']]));
+  rect(0,108,W,14,'#6d4434');
+  rect(0,122,W,3,'#b78c5c');
+  for(let i=0;i<6;i++){
+    const x=26+i*205-c;
+    rect(x,139,164,244,'#947654');
+    rect(x+5,145,154,231,'#b09168');
+    rect(x+5,338,154,38,'#755140');
+    rect(x+172,106,15,320,'#663d31');
+    rect(x+182,116,3,302,'#a66e4c');
+    rect(x+167,410,25,16,'#897d68');
+    if(i===1||i===2){
+      rect(x+32,168,96,123,'#503e32');
+      rect(x+39,175,82,109,'#d9bf88');
+      for(let j=0;j<5;j++)rect(x+42+j*17,175,3,109,'#88674c');
+      for(let j=0;j<5;j++)rect(x+39,178+j*22,82,3,'#88674c');
+      lightShaft(x+117,180,240,48,'#ffe4a954');
+    }
+    if(i<5&&i%2===0){
+      glow(x+145,178,76,'#ffc47b47');
+      drawBodhiLantern(x+145,138);
+    }
+  }
+  const door=bodhiHall.entry+12-c;
+  rect(door-34,250,68,176,'#663f32');
+  rect(door-26,257,52,169,'#d9c08e');
+  rect(door-24,257,12,169,'#715540');
+  rect(door+18,257,8,169,'#886347');
+  rect(door-37,245,74,7,'#b58a5e');
+  rect(0,floor,W,H-floor,'#76523b');
+  rect(0,floor,W,3,'#d0a474');
+  for(let i=-1;i<16;i++){
+    const x=i*76-c%76;
+    rect(x,floor+20+(i%2)*12,1,78,'#674634');
+    rect(x+3,floor+10+(i%3)*21,42,1,'#aa7d54');
+  }
+  const master=bodhiHall.teacher-c;
+  rect(master-44,235,88,110,'#563d31');
+  rect(master-38,240,76,99,'#d6be8a');
+  ctx.save();
+  ctx.textAlign='center';
+  ctx.font='bold 22px serif';
+  ctx.fillStyle='#644b38';
+  ctx.fillText('道',master,298);
+  ctx.restore();
+  rect(master-58,floor-10,116,10,'#67473a');
+  rect(master-55,floor-12,110,3,'#bd9364');
+  poly([[master-30,floor-13],[master-20,floor-43],[master-9,floor-50],[master+10,floor-50],
+    [master+22,floor-37],[master+31,floor-13]],'#3c4644');
+  poly([[master-27,floor-15],[master-18,floor-40],[master-7,floor-47],[master+9,floor-47],
+    [master+19,floor-35],[master+28,floor-15]],'#88978a');
+  poly([[master-16,floor-35],[master-5,floor-39],[master+8,floor-30],[master+16,floor-18],
+    [master+5,floor-17],[master-2,floor-26]],'#c1bea0');
+  rect(master-10,floor-64,20,18,'#d9b693');
+  rect(master-12,floor-66,24,5,'#e3d8ba');
+  rect(master-5,floor-73,11,7,'#dbd4ba');
+  rect(master-6,floor-58,3,2,'#413b36');rect(master+4,floor-58,3,2,'#413b36');
+  poly([[master-9,floor-52],[master+9,floor-52],[master+4,floor-37],[master-1,floor-32],
+    [master-6,floor-42]],'#e9e0c4');
+  contactShadow(player.x+12-c,player.y+player.h,24);
+  monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx);
+  if(mode==='play'&&nearBodhiExit())drawBodhiLabel('[ E ] 离开道观',door,232);
 }
 
 function drawTransformation(camera){
