@@ -172,7 +172,7 @@ if(!wasGrounded&&p.ground){footstep(true);}
 if(!wasGrounded&&p.ground)scatter(p.x+12,p.y+p.h,10,['#d5bf8c','#81975d']);
 if((oldX<2317)!==(p.x<2317))scatter(2317,p.y+15,60,['#d4fff0','#8fcfc4','#f5f9db'],130);
 applyJumpRequest();
-if(p.y>600){fallAndRespawn(platforms);if(mode!=='play')return;}if(p.ground&&p.x>1540&&p.x<1790)checkpoint=1580;if(p.ground&&p.x>2525&&challenged&&!found)checkpoint=2570;for(const f of peaches){if(!f.taken&&Math.abs(p.x+12-f.x)<27&&Math.abs(p.y+17-f.y)<34){f.taken=true;scatter(f.x,f.y,36,['#ffd39a','#f1a785','#f9edbd'],100);tone(740,.09);toast('仙桃 +1');save();}}cam+=((Math.max(0,Math.min(2540,p.x-330)))-cam)*Math.min(1,dt*7);$('area').textContent=p.x<650?'花果山 · 灵石台':p.x<1550?'花果山 · 青石涧':p.x<2320?'花果山 · 飞瀑前':'水帘洞 · 别有洞天';$('counts').textContent=`仙桃 ${peaches.filter(f=>f.taken).length}/12　✦ ${score}`;$('status').textContent=escort?'目标 · 带猴群到石王座前':found?'目标 · 返回猴群，带大家入住水帘洞':challenged?'目标 · 穿过瀑布，调查洞内石碑':'目标 · 沿溪流寻找猴群';if(t>saveTime){save();saveTime=t+4;}}
+if(p.y>600){fallAndRespawn(platforms);if(mode!=='play')return;}if(p.ground&&p.x>1540&&p.x<1790)checkpoint=1580;if(p.ground&&p.x>2525&&challenged&&!found)checkpoint=2570;for(const f of peaches){if(!f.taken&&Math.abs(p.x+12-f.x)<27&&Math.abs(p.y+17-f.y)<34){f.taken=true;healFromPeach();scatter(f.x,f.y,36,['#ffd39a','#f1a785','#f9edbd'],100);tone(740,.09);save();}}cam+=((Math.max(0,Math.min(2540,p.x-330)))-cam)*Math.min(1,dt*7);$('area').textContent=p.x<650?'花果山 · 灵石台':p.x<1550?'花果山 · 青石涧':p.x<2320?'花果山 · 飞瀑前':'水帘洞 · 别有洞天';$('counts').textContent=`仙桃 ${peaches.filter(f=>f.taken).length}/12　✦ ${score}`;$('status').textContent=escort?'目标 · 带猴群到石王座前':found?'目标 · 返回猴群，带大家入住水帘洞':challenged?'目标 · 穿过瀑布，调查洞内石碑':'目标 · 沿溪流寻找猴群';if(t>saveTime){save();saveTime=t+4;}}
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x*PIXEL_SCALE)/PIXEL_SCALE,Math.round(y*PIXEL_SCALE)/PIXEL_SCALE,Math.round(w*PIXEL_SCALE)/PIXEL_SCALE,Math.round(h*PIXEL_SCALE)/PIXEL_SCALE);}
 function poly(points,c){ctx.fillStyle=c;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();}
 function mountain(x,y,w,h,c){poly([[x,y+h],[x+w*.12,y+h*.56],[x+w*.25,y+h*.56],[x+w*.25,y+h*.28],[x+w*.36,y+h*.28],[x+w*.36,y+h*.12],[x+w*.47,y],[x+w*.6,y+h*.06],[x+w*.6,y+h*.26],[x+w*.72,y+h*.26],[x+w*.8,y+h*.6],[x+w*.92,y+h*.6],[x+w,y+h]],c);}
@@ -573,6 +573,7 @@ function updateChapterTwo(dt){
     const touchesPeach=p.x+p.w+7>=x-7&&p.x-7<=x+7&&p.y+p.h+8>=y-10&&p.y-8<=y+7;
     if(collected.has(id)||!touchesPeach)return;
     collected.add(id);
+    healFromPeach();
     energy=Math.min(10,energy+1);
     renderEnergy();
     scatter(x,y,26,['#ffd39a','#f1a785','#f9edbd'],90);
@@ -796,6 +797,7 @@ const thirdRoutes={
   ]
 };
 let thirdScene='mountain', hasStaff=false, namesCleared=false, trained=false, dragonSpoken=false, returnedFromUnderworld=false;
+const SLAM_WINDUP=.36;
 let slamActive=false, slamImpact=null;
 let health=100, maxHealth=100, lives=3, immuneUntil=0, combo=0, swingAt=-Infinity, swingFacing=1;
 let bookPage=0, demons=[];
@@ -898,6 +900,12 @@ function saveCurrentCheckpoint(){
 }
 function showDamage(x,y,amount,isPlayer=false){
   damageNumbers.push({x,y,amount,isPlayer,at:t});
+}
+function healFromPeach(){
+  const amount=Math.min(20,maxHealth-health);
+  health+=amount;
+  refreshHealth();
+  toast(amount>0?'仙桃 · 生命 +'+amount:'拾取仙桃');
 }
 function hurtPlayer(amount,combat=false){
   const applied=combat&&maxHealth===150?Math.round(amount*.9):amount;
@@ -1126,8 +1134,8 @@ function swingStaff(){
     swingAt=t;
     swingFacing=player.face;
     jumpRequestedUntil=-1;
-    player.vy=670;
-    noiseHit(.29,.23,3600,310);
+    player.vy=0;
+    noiseHit(.31,.12,940,1700);
     return;
   }
   combo=t-swingAt<1.02?combo%3+1:1;
@@ -1261,9 +1269,21 @@ function updateChapterThree(dt){
     if(health===0){transformedUntil=0;$('flightDown').hidden=true;loseLife(route);}
     return;
   }
-  if(slamActive)player.vx=swingFacing*75;else updateRun(dt);
-  const limit=thirdScene==='palace'&&!dragonSpoken?1030:Infinity;
-  moveOnPlatforms(route,dt,limit);
+  const charging=slamActive&&t-swingAt<SLAM_WINDUP;
+  if(charging){
+    player.vx=0;
+    player.vy=0;
+  }else{
+    if(slamActive){
+      player.vx=swingFacing*65;
+      if(player.vy===0){
+        player.vy=420;
+        noiseHit(.27,.23,3600,310);
+      }
+    }else updateRun(dt);
+    const limit=thirdScene==='palace'&&!dragonSpoken?1030:Infinity;
+    moveOnPlatforms(route,dt,limit);
+  }
   if(slamActive&&player.ground)landStaffSlam();
   if(thirdScene==='palace'&&!dragonSpoken&&player.x>=835&&player.x<=1040&&player.ground){meetDragon();return;}
   if(thirdScene==='underworld'&&!namesCleared){
@@ -1275,6 +1295,7 @@ function updateChapterThree(dt){
     const id=thirdScene+i;
     if(thirdPeachesTaken.has(id)||Math.abs(player.x+12-x)>26||Math.abs(player.y+17-y)>37)return;
     thirdPeachesTaken.add(id);
+    healFromPeach();
     energy=Math.min(10,energy+1);
     renderEnergy();
     scatter(x,y,24,['#ffd39a','#f1a785','#f9edbd'],85);
@@ -1513,11 +1534,19 @@ function drawStaff(camera){
   const y=player.y+17;
   if(slamActive){
     ctx.save();
-    ctx.translate(x+swingFacing*15,y+5);
-    ctx.rotate(swingFacing*-.36);
-    ctx.scale(1.8,1.55);
-    drawStaffShaft(-28,61);
+    const lift=Math.min(1,(t-swingAt)/SLAM_WINDUP);
+    const charging=lift<1;
+    ctx.translate(x+swingFacing*(charging?12-5*lift:15),y+(charging?-4-13*lift:5));
+    ctx.rotate(swingFacing*(charging?1.28-1.48*lift:-.36));
+    ctx.scale(1+lift*.8,1+lift*.55);
+    drawStaffShaft(charging?-51:-23,61);
     ctx.restore();
+    if(charging){
+      ctx.globalAlpha=.4+lift*.45;
+      rect(x+swingFacing*7-2,y-32,4,4,'#fff2b3');
+      ctx.globalAlpha=1;
+      return;
+    }
     for(let i=0;i<6;i++){
       ctx.globalAlpha=(6-i)/12;
       rect(x-22+i*9,y-16-i*6,2,10+i*2,'#ffdea1');

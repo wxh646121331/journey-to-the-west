@@ -132,13 +132,20 @@ stamina=49;t+=.5;swingStaff();
 if(slamActive||stamina!==49)throw Error('Slam must require 50 stamina');
 stamina=90;swingStaff();
 if(!slamActive||stamina!==40||slamTarget.hp!==36)throw Error('Slam activation');
-for(let i=0;i<30&&slamActive;i++){t+=1/120;update(1/120);}
+const chargeY=player.y;
+t+=.16;update(1/60);
+if(player.y!==chargeY||player.vy!==0||!slamActive)throw Error('Air slam windup');
+for(let i=0;i<80&&slamActive;i++){t+=1/120;update(1/120);}
 if(slamActive||slamTarget.hp!==6||damageNumbers.at(-1).amount!==30)throw Error('Slam landing damage');
 Object.assign(player,{x:1510,y:396,vy:0,ground:true});update(1/60);advance();advance();
 if(mode!=='book'||bookPage!==0)throw Error('Book interaction');
 $('bookCross').onclick();if(namesCleared)throw Error('Wrong book page');
 flipBook(1);flipBook(1);$('bookCross').onclick();$('bookClose').onclick();
 if(!namesCleared||mode!=='play')throw Error('Crossing names off the book');
+health=121;healFromPeach();
+if(health!==141)throw Error('Peach heals 20');
+healFromPeach();if(health!==150)throw Error('Peach respects maximum health');
+health=87;
 fallAndRespawn(thirdRoutes.underworld);
 if(health!==67||lives!==3||!player.ground)throw Error('Fall cost and respawn');
 health=20;fallAndRespawn(thirdRoutes.underworld);
