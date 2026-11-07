@@ -466,7 +466,9 @@ function startChapterTwo(saved){
   dockWait=0;
   checkpoint=saved?.checkpoint??90;
   player.x=checkpoint;
-  player.y=320;
+  const floor=secondRoutes[region].find(platform=>checkpoint>=platform.x&&checkpoint<platform.x+platform.w);
+  player.y=(floor?.y??secondRoutes[region][0].y)-player.h;
+  player.ground=true;
   $('cover').hidden=true;
   $('pause').hidden=false;
   $('chapterLabel').textContent='CHAPTER 02 / 漂洋寻仙';
@@ -773,7 +775,10 @@ function drawCrane(x,y,face){
 }
 
 const thirdRoutes={
-  mountain:[{x:-90,y:434,w:680},{x:630,y:404,w:185},{x:855,y:434,w:995}],
+  mountain:[
+    {x:-90,y:434,w:680},{x:630,y:404,w:185},{x:855,y:434,w:153},
+    {x:1008,y:454,w:207},{x:1215,y:434,w:635}
+  ],
   palace:[
     {x:-80,y:441,w:440},{x:398,y:403,w:165},{x:603,y:373,w:174},
     {x:820,y:417,w:202},{x:1062,y:395,w:185},{x:1282,y:431,w:570}
@@ -834,7 +839,9 @@ function startChapterThree(saved){
   bookPage=0;
   resetDemons();
   player.x=checkpoint;
-  player.y=320;
+  const floor=thirdRoutes[thirdScene].find(platform=>checkpoint>=platform.x&&checkpoint<platform.x+platform.w);
+  player.y=(floor?.y??thirdRoutes[thirdScene][0].y)-player.h;
+  player.ground=true;
   $('cover').hidden=true;
   $('hud').hidden=false;
   $('pause').hidden=false;
@@ -842,7 +849,7 @@ function startChapterThree(saved){
   $('hint').textContent='← → 移动，空格跳跃，E 互动，取得金箍棒后按 A 攻击。';
   if(saved&&!saved.intro){openThirdRoute();return;}
   chapterTwoDialogue([
-    ['花果山','悟空学艺归来，见群猴用竹竿木刀练武，便想给它们弄些真兵器。'],
+    ['水帘洞','悟空学艺归来，见群猴用竹竿木刀练武，便想给它们弄些真兵器。'],
     ['傲来国','他驾风越海，从傲来国的武库取走一批刀枪剑戟，带回花果山。'],
     ['孙悟空','小的们，且随我列阵练练！']
   ],openThirdRoute);
@@ -861,11 +868,11 @@ function openThirdRoute(){
   $('stamina').hidden=false;
   renderStamina();
   $('health').hidden=thirdScene!=='underworld';
-  $('area').textContent={mountain:'花果山 · 铁索桥',palace:'东海 · 水晶宫',underworld:'幽冥 · 森罗殿'}[thirdScene];
+  $('area').textContent={mountain:'花果山 · 水帘洞',palace:'东海 · 水晶宫',underworld:'幽冥 · 森罗殿'}[thirdScene];
   $('counts').textContent=hasStaff?'如意金箍棒':'';
   refreshHealth();
   const quest=thirdScene==='mountain'
-    ? trained?'到铁索桥下的小河，潜入东海':'找到猴群，带它们操练兵器'
+    ? trained?'走到水帘洞拱桥下的小河，潜入东海':'找到猴群，带它们操练兵器'
     : thirdScene==='palace'
       ? hasStaff?'带着金箍棒回花果山':dragonSpoken?'前往海藏，取定海神针':'走近龙王的宝座'
       : namesCleared?'原路返回幽冥入口，回花果山':'穿过幽冥，去阎王宝座前';
@@ -906,9 +913,9 @@ function interactChapterThree(){
       chapterTwoDialogue([
         ['猴群','列阵！举刀！换长枪！'],
         ['孙悟空','这些凡间兵器给孩儿们练手还行，我一用力就觉得太轻，根本不趁手。'],
-        ['老猴','铁索桥下的小河通着东海。大王何不去龙宫求一件宝物？']
+        ['老猴','洞中小拱桥下的河水通着东海。大王何不去龙宫求一件宝物？']
       ],()=>{trained=true;openThirdRoute();});
-    }else if(trained&&player.x>=1010&&player.x<=1215){
+    }else if(trained&&player.x>=1010&&player.x<=1192&&player.ground&&player.y+player.h===454){
       switchThirdScene('palace');
       openThirdRoute();
     }else toast($('questTitle').textContent);
@@ -1149,6 +1156,19 @@ function drawChapterThree(){
       rect(x,484+i%5*11,16+i%4*9,3,'#ef8654');
     }
   }
+  if(mountainScene){
+    rect(-c,0,1900,112,'#203b32');
+    for(let i=0;i<22;i++){
+      const x=i*87-c;
+      poly([[x,105],[x+21,144+i%4*15],[x+55,105]],'#203b32');
+      rect(x+19,118,4,25+i%3*14,'#496052');
+    }
+    rect(30-c,180,130,254,'#365749');
+    rect(42-c,177,8,257,'#637967');
+    rect(148-c,177,8,257,'#516c5a');
+    drawThirdThrone(120-c,434,'#5f7461','#9da782');
+    drawCaveBridge(c);
+  }
   const hall=(sea?885:1510)-c;
   if(!mountainScene){
   rect(hall-125,250,377,191,sea?'#224d59':'#3e283d');
@@ -1161,9 +1181,18 @@ function drawChapterThree(){
   }
   for(const floor of thirdRoutes[thirdScene]){
     const x=floor.x-c;
-    rect(x,floor.y,floor.w,110,sea?'#294955':'#352735');
-    rect(x,floor.y,floor.w,7,sea?'#77aaa1':'#a5726c');
-    for(let i=12;i<floor.w;i+=26)rect(x+i,floor.y+17+i%14,11,4,sea?'#48707a':'#604552');
+    const river=mountainScene&&floor.y===454;
+    if(river){
+      rect(x,439,floor.w,101,'#326a65');
+      for(let i=0;i<18;i++){
+        const ripple=(i*31+t*28)%floor.w;
+        rect(x+ripple,442+i%6*12,Math.min(22,floor.w-ripple),2,'#8ec9b189');
+      }
+      continue;
+    }
+    rect(x,floor.y,floor.w,110,mountainScene?'#354c3e':sea?'#294955':'#352735');
+    rect(x,floor.y,floor.w,7,mountainScene?'#8b9a72':sea?'#77aaa1':'#a5726c');
+    for(let i=12;i<floor.w;i+=26)rect(x+i,floor.y+17+i%14,11,4,mountainScene?'#617359':sea?'#48707a':'#604552');
   }
   if(mountainScene){
     for(let i=0;i<4;i++){
@@ -1173,13 +1202,6 @@ function drawChapterThree(){
       ctx.save();ctx.translate(x+9,415);ctx.rotate(angle);
       rect(0,-22,3,24,'#dac19a');ctx.restore();
     }
-    rect(1008-c,427,207,8,'#518d83');
-    for(let i=0;i<12;i++){
-      rect(1012+i*16-c,362,13,5,'#b49c71');
-      rect(1012+i*16-c,344,17,2,'#737769');
-      rect(1012+i*16-c,346,2,17,'#737769');
-    }
-    rect(1005-c,333,6,102,'#6c5741');rect(1214-c,333,6,102,'#6c5741');
   }else if(sea){
     const x=916-c;
     drawThirdThrone(x,417,'#6c9183','#d6ba78');
@@ -1230,7 +1252,7 @@ function drawChapterThree(){
   let label='';
   if(mountainScene){
     if(!trained&&player.x>=235&&player.x<=490)label='操练猴群';
-    if(trained&&player.x>=1010&&player.x<=1215)label='潜入小河';
+    if(trained&&player.x>=1010&&player.x<=1192&&player.ground&&player.y+player.h===454)label='潜入小河';
   }else if(sea){
     if(dragonSpoken&&!hasStaff&&player.x>=1550)label='取定海神针';
     if(hasStaff&&player.x<180)label='返回花果山';
@@ -1243,6 +1265,21 @@ function drawChapterThree(){
     ctx.font='14px sans-serif';
     ctx.fillText('[ E ] '+label,Math.max(12,Math.min(810,player.x-c-25)),295);
   }
+}
+function drawCaveBridge(camera){
+  const left=981-camera;
+  for(let i=0;i<25;i++){
+    const offset=i*10;
+    const rise=Math.sin(i*Math.PI/24);
+    const y=Math.round(434-rise*56);
+    rect(left+offset,y,11,12,'#87917a');
+    rect(left+offset,y,11,3,'#c2c4a5');
+    rect(left+offset,y+10,11,2,'#596c5e');
+    rect(left+offset,y-16,11,3,'#85967f');
+    if(i%3===0)rect(left+offset+4,y-16,3,17,'#a5ae8f');
+  }
+  rect(left,424,19,14,'#657761');
+  rect(left+231,424,19,14,'#657761');
 }
 function drawRoyal(x,y,dragon){
   const robe=dragon?'#457d72':'#765266';
@@ -1297,8 +1334,12 @@ function drawStaff(camera){
   const y=player.y+17;
   const age=(t-swingAt)/.26;
   if(age>=1){
-    rect(x+15*player.face,y-13,3,33,'#aa724b');
-    rect(x+15*player.face-1,y-14,5,5,'#ffe09a');
+    const hand=x+15*player.face;
+    ctx.save();
+    ctx.translate(hand,y+4);
+    ctx.rotate(player.face*.21);
+    drawStaffShaft(-23,47);
+    ctx.restore();
     return;
   }
   ctx.save();
@@ -1319,10 +1360,20 @@ function drawStaff(camera){
   }
   ctx.globalAlpha=1;
   ctx.rotate(angle);
-  rect(-9,-2,reach+14,4,'#a65d3b');
-  rect(reach-5,-3,11,6,'#fff0a5');
-  rect(-9,-3,7,6,'#f4bc68');
+  ctx.rotate(-Math.PI/2);
+  drawStaffShaft(-9,reach+15);
   ctx.restore();
+}
+function drawStaffShaft(top,length){
+  rect(-2,top,4,length,'#55382d');
+  rect(-1,top+2,2,length-4,'#9d6246');
+  rect(-1,top+2,1,length-4,'#cb9266');
+  for(const end of [top,top+length-8]){
+    rect(-3,end,6,8,'#bd873c');
+    rect(-3,end+1,6,2,'#ffe5a0');
+    rect(-3,end+5,6,1,'#edbc69');
+    rect(-1,end+3,2,2,'#f6ce7c');
+  }
 }
 function drawDemon(demon,camera){
   const x=demon.x-camera,y=demon.y;

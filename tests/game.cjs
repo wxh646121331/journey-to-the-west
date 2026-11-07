@@ -23,6 +23,7 @@ player.y=398;player.vy=0;
 for(let i=0;i<480;i++)update(1/60);
 interact();if(mode!=='quiz'||!activeQuiz.final)throw Error('Throne objective');answer(2);advance();if(mode!=='talk')throw Error('Coronation dialogue');advance();if(mode!=='coronation')throw Error('Throne scene');for(let i=0;i<240;i++){t+=1/60;update(1/60);}if(mode!=='end'||seatedAt===null)throw Error('Seated ending');
 startChapterTwo();
+if(!player.ground||player.y+player.h!==secondRoutes.cave[0].y)throw Error('Second chapter must start grounded');
 for(let i=0;i<6;i++)advance();
 if(chapter!==2||region!=='cave'||mode!=='play'||$('questTitle').textContent!=='找到海边的帆船')throw Error('Second chapter opening');
 Object.assign(player,{x:90,y:390,vy:120,ground:false});
@@ -80,7 +81,7 @@ for(const route of Object.values(thirdRoutes)){
 }
 player.x=300;interact();advance();advance();advance();
 if(!trained)throw Error('Training the monkeys');
-player.x=1080;interact();
+Object.assign(player,{x:1080,y:420,ground:true});interact();
 if(thirdScene!=='palace')throw Error('River entrance');
 Object.assign(player,{x:850,y:383,vy:0,ground:true});update(1/60);advance();advance();advance();
 if(!dragonSpoken||hasStaff)throw Error('Dragon throne dialogue');
