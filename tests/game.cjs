@@ -63,7 +63,7 @@ if(player.y>=beforeY||Math.abs(transformedUntil-t-10)>.001)throw Error('Crane fl
 t+=10.1;update(1/60);if(mode!=='end')throw Error('Chapter two ending');
 
 startChapterThree();advance();advance();advance();
-if(chapter!==3||mode!=='play'||thirdScene!=='palace')throw Error('Third chapter opening');
+if(chapter!==3||mode!=='play'||thirdScene!=='mountain')throw Error('Third chapter opening');
 for(const route of Object.values(thirdRoutes)){
   for(let i=0;i<route.length-1;i++){
     const a=route[i],b=route[i+1];
@@ -78,16 +78,31 @@ for(const route of Object.values(thirdRoutes)){
     if(!landed)throw Error('Chapter three platform gap '+i);
   }
 }
-player.x=1470;interact();advance();advance();advance();
+player.x=300;interact();advance();advance();advance();
+if(!trained)throw Error('Training the monkeys');
+player.x=1080;interact();
+if(thirdScene!=='palace')throw Error('River entrance');
+player.x=850;update(1/60);advance();advance();advance();
+if(!dragonSpoken||hasStaff)throw Error('Dragon throne dialogue');
+player.x=1590;interact();advance();advance();advance();
 if(!hasStaff||mode!=='play')throw Error('Obtaining the staff');
-interact();advance();advance();advance();
-if(thirdScene!=='underworld'||gateOpen)throw Error('Entering the underworld');
-player.x=930;keys.add('ArrowRight');update(1/60);keys.clear();
-if(player.x>930)throw Error('Closed underworld gate');
-interact();if(!gateOpen)throw Error('Staff gate interaction');
-player.x=1490;interact();advance();advance();
-if(!namesCleared)throw Error('Crossing names off the book');
-player.x=1770;interact();advance();
+player.x=120;interact();advance();advance();advance();advance();
+if(thirdScene!=='underworld'||health!==100)throw Error('Entering the underworld');
+const demon=demons[0];
+Object.assign(player,{x:demon.x-27,y:demon.y-34,face:1,vx:0,vy:0,ground:true});
+demon.strikeAt=t+.1;t+=.2;updateDemons(1/60);
+if(health!==80)throw Error('Demon damage');
+swingStaff();if(demon.hp!==13)throw Error('First strike damage');
+t+=.26;swingStaff();if(demon.hp!==3)throw Error('Second strike damage');
+const thirdDemon=demons[1];
+Object.assign(player,{x:thirdDemon.x-27,y:thirdDemon.y-34,face:1});
+t+=.26;swingStaff();if(thirdDemon.hp!==8)throw Error('Third strike damage');
+player.x=1510;interact();advance();advance();
+if(mode!=='book'||bookPage!==0)throw Error('Book interaction');
+$('bookCross').onclick();if(namesCleared)throw Error('Wrong book page');
+flipBook(1);flipBook(1);$('bookCross').onclick();$('bookClose').onclick();
+if(!namesCleared||mode!=='play')throw Error('Crossing names off the book');
+player.x=120;interact();advance();
 if(mode!=='end')throw Error('Third chapter ending');
 
 `,context);

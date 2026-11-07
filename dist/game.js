@@ -18,7 +18,7 @@ function tone(f=440,d=.12){if(muted)return;try{audio??=new (window.AudioContext|
 function toast(s){$('toast').textContent=s;toastUntil=t+3.5;}
 function setSteps(n){for(let i=0;i<3;i++)$('step'+i).classList.toggle('active',i<=n);}
 function save(){if(mode!=='play')return;try{localStorage.setItem(SAVE,JSON.stringify({x:checkpoint,score,taken:peaches.map(p=>p.taken),found,challenged,escort}));}catch{}}
-function reset(){$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
+function reset(){$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false){activeQuiz={...q,final};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
@@ -126,8 +126,8 @@ $('start').onclick=start;$('restart').onclick=start;$('resume').onclick=pause;$(
 try{if(localStorage.getItem(SAVE))$('continue').hidden=false;}catch{}
 $('continue').onclick=()=>{try{const s=JSON.parse(localStorage.getItem(SAVE));if(s?.chapter===3){startChapterThree(s);return;}if(s?.chapter===2){startChapterTwo(s);return;}reset();score=s.score||0;challenged=!!s.challenged;found=!!s.found;escort=!!s.escort;checkpoint=s.x||90;player.x=checkpoint;player.y=270;peaches.forEach((p,i)=>p.taken=!!s.taken?.[i]);$('cover').hidden=true;$('pause').hidden=false;tone(392);beginPlay();if(found)setSteps(2);}catch{start();}};
 $('stage').addEventListener('click',e=>{if(e.target.closest('button'))return;advance();});
-window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.key===' ')e.preventDefault();if(e.repeat)return;if(e.code==='Escape'){pause();return;}if(paused)return;if((e.code==='Space'||e.key===' ')&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'||e.key===' '||e.key==='ArrowUp'||e.key?.toLowerCase()==='w')jump();if(e.code==='KeyE')interact();if(e.code==='KeyF')castTransform();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end'].includes(mode))pause();});
-document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();if(b.hasPointerCapture&&!b.hasPointerCapture(e.pointerId)){try{b.setPointerCapture(e.pointerId);}catch{}}keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();if(b.dataset.key==='KeyF')castTransform();});if(b.dataset.key==='Space')b.addEventListener('click',e=>{if(e.detail===0)jump();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
+window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.key===' ')e.preventDefault();if(e.repeat)return;if(mode==='book'&&!paused&&['ArrowLeft','ArrowRight'].includes(e.code)){flipBook(e.code==='ArrowLeft'?-1:1);return;}if(e.code==='Escape'){pause();return;}if(paused)return;if((e.code==='Space'||e.key===' ')&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'||e.key===' '||e.key==='ArrowUp'||e.key?.toLowerCase()==='w')jump();if(e.code==='KeyE')interact();if(e.code==='KeyF')castTransform();if(e.code==='KeyA')swingStaff();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end'].includes(mode))pause();});
+document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();if(b.hasPointerCapture&&!b.hasPointerCapture(e.pointerId)){try{b.setPointerCapture(e.pointerId);}catch{}}keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();if(b.dataset.key==='KeyF')castTransform();if(b.dataset.key==='KeyA')swingStaff();});if(b.dataset.key==='Space')b.addEventListener('click',e=>{if(e.detail===0)jump();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
 function jump(){
   if(mode!=='play'||paused)return;
   jumpRequestedUntil=t+.18;
@@ -730,6 +730,7 @@ function drawCrane(x,y,face){
 }
 
 const thirdRoutes={
+  mountain:[{x:-90,y:434,w:680},{x:630,y:404,w:185},{x:855,y:434,w:995}],
   palace:[
     {x:-80,y:441,w:440},{x:398,y:403,w:165},{x:603,y:373,w:174},
     {x:820,y:417,w:202},{x:1062,y:395,w:185},{x:1282,y:431,w:570}
@@ -739,114 +740,249 @@ const thirdRoutes={
     {x:794,y:427,w:205},{x:1040,y:390,w:178},{x:1260,y:430,w:590}
   ]
 };
-let thirdScene='palace', hasStaff=false, gateOpen=false, namesCleared=false;
-let staffFlashUntil=0;
+let thirdScene='mountain', hasStaff=false, namesCleared=false, trained=false, dragonSpoken=false;
+let health=100, immuneUntil=0, combo=0, swingAt=-Infinity, swingFacing=1;
+let bookPage=0, demons=[];
+const staffDamage=[7,10,12];
+const monkeyNames=['孙悟空','通背猿猴','赤尻马猴','山中猕猴'];
+const deathBook=[
+  ['羽族名册',['白鹭','山雀','苍鹰']],
+  ['走兽名册',['山鹿','白狐','野兔']],
+  ['猴属名册',monkeyNames],
+  ['水族名册',['鲤鱼','河蟹','青虾']]
+];
 
 function saveChapterThree(state){
   try{
     localStorage.setItem(SAVE,JSON.stringify({
-      chapter:3,scene:thirdScene,hasStaff,gateOpen,namesCleared,checkpoint,...state
+      chapter:3,scene:thirdScene,hasStaff,trained,dragonSpoken,namesCleared,checkpoint,...state
     }));
   }catch{}
+}
+function resetDemons(){
+  demons=[
+    {x:861,min:822,max:985,y:427,dir:1},
+    {x:1120,min:1060,max:1192,y:390,dir:-1},
+    {x:1375,min:1285,max:1455,y:430,dir:1}
+  ].map(demon=>({...demon,hp:20,strikeAt:0,readyAt:0}));
 }
 function startChapterThree(saved){
   reset();
   chapter=3;
-  thirdScene=saved?.scene==='underworld'?'underworld':'palace';
-  hasStaff=thirdScene==='underworld'||(!saved?.intro&&!!saved?.hasStaff);
-  gateOpen=thirdScene==='underworld'&&!!saved?.gateOpen;
+  thirdScene=saved?.intro?'mountain':(saved?.scene??'mountain');
+  if(!thirdRoutes[thirdScene])thirdScene='mountain';
+  hasStaff=!saved?.intro&&(thirdScene==='underworld'||!!saved?.hasStaff);
+  trained=!!saved?.trained;
+  dragonSpoken=!!saved?.dragonSpoken||hasStaff;
   namesCleared=thirdScene==='underworld'&&!!saved?.namesCleared;
-  staffFlashUntil=0;
   checkpoint=saved?.intro?90:(saved?.checkpoint??90);
+  health=100;
+  immuneUntil=0;
+  swingAt=-Infinity;
+  combo=0;
+  bookPage=0;
+  resetDemons();
   player.x=checkpoint;
   player.y=320;
   $('cover').hidden=true;
   $('hud').hidden=false;
   $('pause').hidden=false;
   $('chapterLabel').textContent='CHAPTER 03 / 龙宫与幽冥';
-  $('area').textContent=thirdScene==='palace'?'东海 · 水晶宫':'幽冥 · 森罗殿';
-  $('counts').textContent=hasStaff?'如意金箍棒':'';
-  $('hint').textContent='方向键移动，空格跳跃，靠近人物或物件按 E 互动。';
+  $('hint').textContent='← → 移动，空格跳跃，E 互动，取得金箍棒后按 A 攻击。';
   if(saved&&!saved.intro){openThirdRoute();return;}
   chapterTwoDialogue([
-    ['花果山','悟空学艺归来，救回被混世魔王掳走的猴儿。众猴练起武艺，悟空却找不到一件称手的兵器。'],
-    ['老猴','大王若要寻兵器，不妨到东海龙宫问问。'],
-    ['孙悟空','好，我便去见东海龙王。']
+    ['花果山','悟空学艺归来，见群猴用竹竿木刀练武，便想给它们弄些真兵器。'],
+    ['傲来国','他驾风越海，从傲来国的武库取走一批刀枪剑戟，带回花果山。'],
+    ['孙悟空','小的们，且随我列阵练练！']
   ],openThirdRoute);
+}
+function refreshHealth(){
+  $('healthMeter').value=health;
+  $('healthValue').textContent=health+'/100';
 }
 function openThirdRoute(){
   mode='play';
   $('stage').focus?.({preventScroll:true});
   $('touch').hidden=false;
-  chapterTwoQuest(thirdScene==='palace'
-    ? hasStaff?'带着金箍棒返回花果山':'穿过水晶宫，拜见东海龙王'
-    : namesCleared?'穿过殿后幽门，回到花果山':gateOpen?'查阅生死簿，勾去猴属姓名':'用金箍棒打开幽冥石门');
+  $('staffButton').hidden=!hasStaff;
+  $('health').hidden=thirdScene!=='underworld';
+  $('area').textContent={mountain:'花果山 · 铁索桥',palace:'东海 · 水晶宫',underworld:'幽冥 · 森罗殿'}[thirdScene];
+  $('counts').textContent=hasStaff?'如意金箍棒':'';
+  refreshHealth();
+  const quest=thirdScene==='mountain'
+    ? trained?'到铁索桥下的小河，潜入东海':'找到猴群，带它们操练兵器'
+    : thirdScene==='palace'
+      ? hasStaff?'带着金箍棒回花果山':dragonSpoken?'前往海藏，取定海神针':'走近龙王的宝座'
+      : namesCleared?'原路返回幽冥入口，回花果山':'穿过幽冥，去阎王宝座前';
+  chapterTwoQuest(quest);
   saveChapterThree();
 }
-function enterUnderworld(){
-  thirdScene='underworld';
+function switchThirdScene(scene){
+  thirdScene=scene;
   checkpoint=90;
   cam=0;
   Object.assign(player,{x:90,y:340,vx:0,vy:0,ground:false});
-  $('area').textContent='幽冥 · 森罗殿';
-  $('counts').textContent='如意金箍棒';
+}
+function returnFromPalace(){
+  switchThirdScene('mountain');
   chapterTwoDialogue([
-    ['花果山 · 夜','悟空带着如意金箍棒与披挂归山。酒宴之后，他在松阴下睡去。'],
-    ['幽冥界','两名勾魂使持文书引他的魂魄来到城下。悟空抬头一看，才知到了幽冥。'],
-    ['孙悟空','我已学得长生之道，为何名册上还有我的名字？且进去问个明白。']
-  ],openThirdRoute);
+    ['花果山 · 操练场','悟空穿着龙宫披挂回到花果山。众猴围上来，他把金箍棒一展，又收回手中。'],
+    ['花果山 · 夜','群猴设宴庆贺。酒过数巡，悟空在松阴下睡去。'],
+    ['幽冥界','两名勾魂使拿着写有孙悟空姓名的文书，把他的魂魄带到幽冥。'],
+    ['孙悟空','我已习得长生之法。这生死簿，我倒要亲自看一看。']
+  ],()=>{
+    switchThirdScene('underworld');
+    resetDemons();
+    openThirdRoute();
+  });
+}
+function meetDragon(){
+  chapterTwoDialogue([
+    ['东海龙王','上仙到水晶宫来，有何贵干？'],
+    ['孙悟空','我来借一件称手的兵器。你先前拿来的刀枪画戟，分量都太轻。'],
+    ['东海龙王','海藏里有一根定海神铁。你沿殿向右走，若能拿得动，便试试它。']
+  ],()=>{dragonSpoken=true;checkpoint=850;openThirdRoute();});
 }
 function interactChapterThree(){
+  if(thirdScene==='mountain'){
+    if(!trained&&player.x>=235&&player.x<=490){
+      chapterTwoDialogue([
+        ['猴群','列阵！举刀！换长枪！'],
+        ['孙悟空','这些凡间兵器给孩儿们练手还行，我一用力就觉得太轻，根本不趁手。'],
+        ['老猴','铁索桥下的小河通着东海。大王何不去龙宫求一件宝物？']
+      ],()=>{trained=true;openThirdRoute();});
+    }else if(trained&&player.x>=1010&&player.x<=1215){
+      switchThirdScene('palace');
+      openThirdRoute();
+    }else toast($('questTitle').textContent);
+    return;
+  }
   if(thirdScene==='palace'){
-    if(player.x<1415){toast('继续向右，龙王在水晶宫深处。');return;}
-    if(hasStaff){enterUnderworld();return;}
+    if(!dragonSpoken&&player.x>=820&&player.x<=1040){meetDragon();return;}
+    if(hasStaff&&player.x<180){returnFromPalace();return;}
+    if(dragonSpoken&&!hasStaff&&player.x>=1550){
+      chapterTwoDialogue([
+        ['海藏','金纹从巨柱上亮起，照亮了殿底。铁柱上刻着「如意金箍棒」。'],
+        ['孙悟空','再细些！再短些！'],
+        ['海藏','神铁应声缩小，落入悟空掌中。龙王们又送来一身披挂。']
+      ],()=>{
+        hasStaff=true;
+        checkpoint=1480;
+        scatter(player.x+12,player.y,68,['#fff2ab','#d6a654','#f2c778'],145);
+        tone(587,.24);
+        openThirdRoute();
+      });
+    }else toast($('questTitle').textContent);
+    return;
+  }
+  if(!namesCleared&&player.x>=1490){
     chapterTwoDialogue([
-      ['东海龙王','刀枪画戟你都嫌轻。海藏里还有一根定海神铁，且随我去看。'],
-      ['孙悟空','这铁柱若能再细些、再短些，才好拿在手里。'],
-      ['水晶宫','神铁果然随心缩小。悟空得了如意金箍棒，又请龙王们相赠一身披挂。']
-    ],()=>{
-      hasStaff=true;
-      checkpoint=1390;
-      $('counts').textContent='如意金箍棒';
-      scatter(player.x+12,player.y,50,['#f8e0a0','#d6a654','#f2c778'],130);
-      tone(587,.24);
-      openThirdRoute();
-    });
+      ['阎王','你既有长生之法，且待我查一查名册。'],
+      ['孙悟空','把生死簿拿来。我自己翻。']
+    ],openDeathBook);
     return;
   }
-  if(!gateOpen&&player.x>=870){
-    gateOpen=true;
-    staffFlashUntil=t+.35;
-    scatter(955,369,48,['#be92c8','#f2ba74','#e2c7d2'],110);
-    noiseHit(.28,.24,2400,155);
-    openThirdRoute();
-    return;
-  }
-  if(gateOpen&&!namesCleared&&player.x>=1430){
-    chapterTwoDialogue([
-      ['森罗殿','十殿阎王取出生死簿，悟空翻到自己的姓名。'],
-      ['孙悟空','取笔来。我和花果山的猴儿们，从今便不受这册子拘束！']
-    ],()=>{
-      namesCleared=true;
-      checkpoint=1400;
-      scatter(1535,386,30,['#ffdda3','#f0bd75','#d09581']);
-      openThirdRoute();
-    });
-    return;
-  }
-  if(namesCleared&&player.x>=1730){
-    talk('花果山 · 梦醒','悟空醒来，将幽冥经历说给群猴听。龙宫与冥司也各自上表，奏闻天庭。',finishChapterThree);
+  if(namesCleared&&player.x<=155){
+    talk('花果山 · 梦醒','悟空从松阴下醒来，把幽冥之事说给群猴听。龙宫和冥司也各自上表，奏闻天庭。',finishChapterThree);
     return;
   }
   toast($('questTitle').textContent);
 }
+function openDeathBook(){
+  mode='book';
+  keys.clear();
+  $('touch').hidden=true;
+  $('dialog').hidden=false;
+  bookPage=0;
+  renderDeathBook();
+}
+function flipBook(direction){
+  if(mode!=='book'||paused)return;
+  bookPage=Math.max(0,Math.min(deathBook.length-1,bookPage+direction));
+  renderDeathBook();
+}
+function renderDeathBook(){
+  const [title,names]=deathBook[bookPage];
+  const correctPage=bookPage===2;
+  $('dialog').innerHTML=`<div class="speaker">生死簿 · 第 ${bookPage+1} / ${deathBook.length} 页</div>
+    <div id="bookPage"><b>${title}</b><div class="${namesCleared&&correctPage?'crossed':''}">${names.join('　')}</div></div>
+    <div id="bookActions"><button id="bookPrev" ${bookPage===0?'disabled':''}>← 上一页</button>
+    <button id="bookNext" ${bookPage===deathBook.length-1?'disabled':''}>下一页 →</button>
+    <button id="bookCross" ${correctPage&&!namesCleared?'':'disabled'}>划掉这一页姓名</button>
+    <button id="bookClose" ${namesCleared?'':'disabled'}>合上生死簿</button></div>`;
+  $('bookPrev').onclick=()=>flipBook(-1);
+  $('bookNext').onclick=()=>flipBook(1);
+  $('bookCross').onclick=()=>{
+    if(paused||bookPage!==2||namesCleared)return;
+    namesCleared=true;
+    checkpoint=1440;
+    saveChapterThree();
+    tone(392,.2);
+    renderDeathBook();
+  };
+  $('bookClose').onclick=()=>{
+    if(paused||!namesCleared)return;
+    $('dialog').hidden=true;
+    openThirdRoute();
+  };
+}
+function swingStaff(){
+  if(chapter!==3||mode!=='play'||paused||!hasStaff||t-swingAt<.22)return;
+  combo=t-swingAt<.72?combo%3+1:1;
+  swingAt=t;
+  swingFacing=player.face;
+  const damage=staffDamage[combo-1];
+  noiseHit(.14,.14+combo*.035,2800,340);
+  for(const demon of demons){
+    const ahead=(demon.x-(player.x+12))*swingFacing;
+    if(thirdScene!=='underworld'||demon.hp<=0||ahead< -14||ahead>83+combo*8||Math.abs(demon.y-player.y-34)>44)continue;
+    demon.hp=Math.max(0,demon.hp-damage);
+    demon.strikeAt=0;
+    demon.readyAt=t+.34;
+    scatter(demon.x,demon.y-18,15+combo*4,['#f6c575','#fcdfae','#aa6975'],85);
+    tone(175+combo*50,.09);
+  }
+}
+function updateDemons(dt){
+  for(const demon of demons){
+    if(demon.hp<=0)continue;
+    const gap=player.x+12-demon.x;
+    const sameHeight=Math.abs(player.y+34-demon.y)<36;
+    if(demon.strikeAt){
+      if(t<demon.strikeAt)continue;
+      demon.strikeAt=0;
+      demon.readyAt=t+.95;
+      if(sameHeight&&Math.abs(gap)<49&&t>=immuneUntil){
+        health=Math.max(0,health-20);
+        immuneUntil=t+.7;
+        refreshHealth();
+        noiseHit(.2,.18,800,110);
+      }
+      continue;
+    }
+    if(sameHeight&&Math.abs(gap)<185){
+      demon.dir=Math.sign(gap)||demon.dir;
+      if(Math.abs(gap)<36){
+        if(t>=demon.readyAt)demon.strikeAt=t+.32;
+        continue;
+      }
+    }else if(demon.x<=demon.min||demon.x>=demon.max){
+      demon.dir=demon.x<=demon.min?1:-1;
+    }
+    demon.x=Math.max(demon.min,Math.min(demon.max,demon.x+demon.dir*dt*65));
+  }
+}
 function updateChapterThree(dt){
   if(mode!=='play')return;
   const route=thirdRoutes[thirdScene];
-  player.vx=(keys.has('ArrowRight')||keys.has('KeyD')?205:0)-(keys.has('ArrowLeft')||keys.has('KeyA')?205:0);
+  player.vx=(keys.has('ArrowRight')||keys.has('KeyD')?205:0)-(keys.has('ArrowLeft')?205:0);
   if(player.vx)player.face=Math.sign(player.vx);
-  moveOnPlatforms(route,dt,thirdScene==='underworld'&&!gateOpen?930:Infinity);
-  if(player.y>590){
+  const limit=thirdScene==='palace'&&!dragonSpoken?1030:Infinity;
+  moveOnPlatforms(route,dt,limit);
+  if(thirdScene==='palace'&&!dragonSpoken&&player.x>=835){meetDragon();return;}
+  if(thirdScene==='underworld'&&!namesCleared)updateDemons(dt);
+  if(player.y>590||health===0){
+    if(health===0){health=100;resetDemons();refreshHealth();}
     jumpRequestedUntil=-1;
     Object.assign(player,{x:checkpoint,y:318,vy:0,ground:false});
     toast('回到最近的落脚点。');
@@ -869,22 +1005,23 @@ function finishChapterThree(){
   $('status').textContent='第三关完成 · 四海千山皆拱伏';
   tone(523,.24);
 }
-
 function drawChapterThree(){
   const sea=thirdScene==='palace';
+  const mountainScene=thirdScene==='mountain';
   const c=cam;
   const sky=ctx.createLinearGradient(0,0,0,H);
-  sky.addColorStop(0,sea?'#102e49':'#211932');
-  sky.addColorStop(1,sea?'#52938f':'#6c424d');
+  sky.addColorStop(0,mountainScene?'#244942':sea?'#102e49':'#211932');
+  sky.addColorStop(1,mountainScene?'#9ab695':sea?'#52938f':'#6c424d');
   ctx.fillStyle=sky;
   ctx.fillRect(0,0,W,H);
-  for(let i=-1;i<8;i++)mountain(i*265-c*.33,195+i%3*28,340,355,sea?'#285461':'#382740');
+  for(let i=-1;i<8;i++)mountain(i*265-c*.33,195+i%3*28,340,355,mountainScene?'#3c6b51':sea?'#285461':'#382740');
   for(let i=0;i<40;i++){
     const x=((i*151-c*.24)%W+W)%W;
     const y=455-(i*79+t*(sea?19:10))%440;
     rect(x,y,1+i%3,1+i%3,sea?'#b0edcf88':'#e4aa8580');
   }
-  const hall=1510-c;
+  const hall=(sea?885:1510)-c;
+  if(!mountainScene){
   rect(hall-125,250,377,191,sea?'#224d59':'#3e283d');
   poly([[hall-156,250],[hall+53,175],[hall+279,250]],sea?'#3e7d83':'#63384a');
   rect(hall-150,246,420,7,sea?'#d8be79':'#b47d62');
@@ -892,58 +1029,147 @@ function drawChapterThree(){
     rect(x,259,17,173,sea?'#7bb2a9':'#85545d');
     rect(x-3,256,23,7,sea?'#c7be83':'#c98d73');
   }
+  }
   for(const floor of thirdRoutes[thirdScene]){
     const x=floor.x-c;
     rect(x,floor.y,floor.w,110,sea?'#294955':'#352735');
     rect(x,floor.y,floor.w,7,sea?'#77aaa1':'#a5726c');
     for(let i=12;i<floor.w;i+=26)rect(x+i,floor.y+17+i%14,11,4,sea?'#48707a':'#604552');
   }
-  if(sea){
-    const x=1480-c;
-    rect(x-11,390,23,41,'#748a65');
-    rect(x-9,376,20,16,'#bca97a');
-    rect(x-12,372,28,5,'#e0c077');
-    rect(x-9,365,3,8,'#d0ab62');
-    rect(x+10,365,3,8,'#d0ab62');
+  if(mountainScene){
+    for(let i=0;i<4;i++){
+      const x=263+i*43-c;
+      monkey(x,402,i%2?-1:1,trained,.8);
+      const angle=trained?Math.sin(t*8+i):.4;
+      ctx.save();ctx.translate(x+9,415);ctx.rotate(angle);
+      rect(0,-22,3,24,'#dac19a');ctx.restore();
+    }
+    rect(1008-c,427,207,8,'#518d83');
+    for(let i=0;i<12;i++){
+      rect(1012+i*16-c,362,13,5,'#b49c71');
+      rect(1012+i*16-c,344,17,2,'#737769');
+      rect(1012+i*16-c,346,2,17,'#737769');
+    }
+    rect(1005-c,333,6,102,'#6c5741');rect(1214-c,333,6,102,'#6c5741');
+  }else if(sea){
+    const x=916-c;
+    drawThirdThrone(x,417,'#6c9183','#d6ba78');
+    rect(x-11,375,23,30,'#748a65');
+    rect(x-9,360,20,16,'#bca97a');
+    rect(x-12,356,28,5,'#e0c077');
+    rect(x-9,349,3,8,'#d0ab62');
+    rect(x+10,349,3,8,'#d0ab62');
     if(!hasStaff){
-      rect(1550-c,304,10,127,'#daab65');
-      rect(1548-c,306,14,9,'#f8d88e');
-      rect(1548-c,417,14,9,'#f8d88e');
+      const shrinking=dragonSpoken&&player.x>=1550&&mode==='talk'&&secondDialogueLine===2;
+      ctx.save();
+      if(shrinking){ctx.translate(0,431*.66);ctx.scale(1,.34);}
+      drawDivineIron(1605-c);
+      ctx.restore();
     }
   }else{
-    if(!gateOpen){
-      rect(931-c,305,36,122,'#5b495e');
-      rect(935-c,310,3,112,'#93788d');
-      rect(951-c,360,6,8,'#d6a475');
-    }
-    rect(1535-c,396,75,34,'#604657');
-    rect(1552-c,384,41,13,namesCleared?'#a99480':'#e7d8ac');
-    rect(1572-c,384,2,13,'#806b60');
-    if(namesCleared)rect(1555-c,391,35,2,'#a24d49');
-    rect(1760-c,335,42,95,namesCleared?'#996c8f':'#251d34');
+    drawThirdThrone(1520-c,430,'#633f50','#bc8467');
+    rect(1508-c,383,22,28,'#71475d');
+    rect(1510-c,369,18,15,'#d0a786');
+    rect(1504-c,364,30,6,'#423243');
+    rect(1552-c,394,47,36,'#63495a');
+    rect(1554-c,383,43,13,namesCleared?'#a99480':'#e7d8ac');
+    rect(1575-c,383,2,13,'#806b60');
+    if(namesCleared)rect(1557-c,390,35,2,'#a24d49');
+    for(const demon of demons)if(demon.hp>0)drawDemon(demon,c);
   }
-  monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx,1,true);
-  if(hasStaff){
-    const x=player.x+12-c;
-    if(t<staffFlashUntil)rect(x-20,player.y+15,61,5,'#ffe099');
-    else{
-      const hand=x+16*player.face;
-      rect(hand,player.y+5,3,31,'#ba824f');
-      rect(hand-1,player.y+4,5,5,'#ffe09a');
-    }
+  if(t>=immuneUntil||Math.floor(t*22)%2===0){
+    monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx,1,true);
   }
+  if(hasStaff)drawStaff(c);
   for(const p of particles){
     ctx.globalAlpha=Math.min(1,p.life/p.duration*1.7);
     rect(p.x-c,p.y,p.size,p.size,p.color);
   }
   ctx.globalAlpha=1;
-  const label=sea
-    ? player.x>=1415&&(hasStaff?'返回花果山':'拜见东海龙王')
-    : !gateOpen?player.x>=870&&'金箍棒破门'
-    : !namesCleared?player.x>=1430&&'查阅生死簿':player.x>=1730&&'离开幽冥';
+  let label='';
+  if(mountainScene){
+    if(!trained&&player.x>=235&&player.x<=490)label='操练猴群';
+    if(trained&&player.x>=1010&&player.x<=1215)label='潜入小河';
+  }else if(sea){
+    if(dragonSpoken&&!hasStaff&&player.x>=1550)label='取定海神针';
+    if(hasStaff&&player.x<180)label='返回花果山';
+  }else{
+    if(!namesCleared&&player.x>=1490)label='拜见阎王';
+    if(namesCleared&&player.x<=155)label='回花果山';
+  }
   if(label&&mode==='play'){
     ctx.fillStyle='#ffe5b3';
     ctx.font='14px sans-serif';
-    ctx.fillText('[ E ] '+label,Math.min(810,player.x-c-25),295);
+    ctx.fillText('[ E ] '+label,Math.max(12,Math.min(810,player.x-c-25)),295);
   }
+}
+function drawThirdThrone(x,floor,stone,trim){
+  rect(x-29,floor-6,58,6,trim);
+  rect(x-21,floor-71,42,66,stone);
+  rect(x-24,floor-74,48,6,trim);
+  rect(x-29,floor-29,13,23,stone);
+  rect(x+16,floor-29,13,23,stone);
+  rect(x-22,floor-20,44,6,trim);
+}
+function drawDivineIron(x){
+  const glow=.25+Math.sin(t*3)*.09;
+  ctx.globalAlpha=glow;
+  rect(x-17,179,46,249,'#f4c974');
+  ctx.globalAlpha=1;
+  rect(x,189,13,242,'#805240');
+  rect(x+3,189,4,242,'#bd8558');
+  rect(x-3,185,19,16,'#d59a53');
+  rect(x-3,413,19,18,'#d59a53');
+  rect(x-2,190,17,4,'#fff1a1');
+  rect(x-2,418,17,4,'#fff1a1');
+  for(let i=0;i<8;i++){
+    rect(x+3,219+i*23,8,2,'#f3c36b');
+    rect(x+5,218+i*23,2,6,'#f3c36b');
+  }
+  ctx.fillStyle='#ffe295';
+  ctx.font='11px serif';
+  [...'如意金箍棒'].forEach((glyph,i)=>ctx.fillText(glyph,x+21,250+i*16));
+}
+function drawStaff(camera){
+  const x=player.x+12-camera;
+  const y=player.y+17;
+  const age=(t-swingAt)/.26;
+  if(age>=1){
+    rect(x+15*player.face,y-13,3,33,'#aa724b');
+    rect(x+15*player.face-1,y-14,5,5,'#ffe09a');
+    return;
+  }
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.scale(swingFacing,1);
+  const direction=combo===2?-1:1;
+  const angle=(-1.5+age*2.65)*direction;
+  const reach=34+combo*8;
+  for(let i=0;i<10;i++){
+    const trailAngle=angle-i*.10*direction;
+    ctx.globalAlpha=(1-age)*(1-i/10)*.85;
+    rect(Math.cos(trailAngle)*reach,Math.sin(trailAngle)*reach,6+combo,4,'#ffd478');
+  }
+  ctx.globalAlpha=1;
+  ctx.rotate(angle);
+  rect(-9,-2,reach+14,4,'#a65d3b');
+  rect(reach-5,-3,11,6,'#fff0a5');
+  rect(-9,-3,7,6,'#f4bc68');
+  ctx.restore();
+}
+function drawDemon(demon,camera){
+  const x=demon.x-camera,y=demon.y;
+  rect(x-8,y-22,16,17,'#735866');
+  rect(x-10,y-32,20,14,'#997688');
+  rect(x-11,y-38,4,8,'#c49c8e');rect(x+7,y-38,4,8,'#c49c8e');
+  rect(x-6,y-28,3,3,'#ffd478');rect(x+3,y-28,3,3,'#ffd478');
+  rect(x-8,y-6,6,6,'#514353');rect(x+3,y-6,6,6,'#514353');
+  ctx.save();ctx.translate(x+10*demon.dir,y-16);ctx.scale(demon.dir,1);
+  ctx.rotate(demon.strikeAt?-.95:demon.readyAt-t>.68?.95:Math.sin(t*8)*.25);
+  rect(0,-2,21,4,'#8e6658');
+  rect(13,-5,11,10,'#b4866f');
+  for(let i=0;i<4;i++)rect(13+i*3,-8,2,4,'#d7ad85');
+  ctx.restore();
+  rect(x-11,y-45,22,3,'#47313d');
+  rect(x-11,y-45,22*demon.hp/20,3,'#cf7969');
 }

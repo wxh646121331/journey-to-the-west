@@ -11,3 +11,11 @@
 #energyMeter{width:72px;vertical-align:middle;accent-color:#d8af60}
 #ending .primary+.subtle{margin-top:7px}
 @media(max-width:700px){#energyMeter{width:42px}#energy{padding:4px 5px}}
+
+#health{background:#291c27e8;border:1px solid #ba806a;padding:6px 9px;color:#ffdec5;white-space:nowrap}
+#healthMeter{width:70px;vertical-align:middle}
+#bookPage{background:#e9d7ac;color:#50362e;border:3px double #b39969;padding:10px 14px;font:600 16px 'Noto Serif SC',serif;margin:8px 0}
+#bookPage .crossed{text-decoration:line-through;text-decoration-color:#9e3034}
+#bookActions{display:flex;flex-wrap:wrap;gap:6px}
+#bookActions button{padding:5px 10px;border:1px solid #b5a26c;color:#f4e7ba;background:#304e42}
+#bookActions button:disabled{opacity:.45;cursor:default}
