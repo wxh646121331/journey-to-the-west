@@ -54,6 +54,17 @@ const platforms=[{x:-100,y:452,w:450},{x:390,y:420,w:140},{x:560,y:382,w:145},{x
 const peaches=[{x:215,y:408},{x:440,y:376},{x:610,y:338},{x:790,y:380},{x:960,y:382},{x:1090,y:360},{x:1260,y:321},{x:1435,y:365},{x:1740,y:408},{x:2185,y:368},{x:2405,y:348},{x:3025,y:361}].map(p=>({...p,taken:false}));
 const lines=[['天地初开','东胜神洲的海外，有一座花果山。'],['天地初开','山顶有一块仙石，日日承受天地精华。'],['天地初开','日月轮转，仙石之中渐渐孕育出生命。'],['灵石有知','山风吹过，林间鸟鸣，一场奇遇即将开始。'],['仙石初醒','一日，仙石忽然迸裂，产下一枚石卵。'],['仙石初醒','石卵见风，化作一只石猴，五官俱备，四肢皆全。'],['仙石初醒','石猴睁开双眼，两道金光直冲天际。'],['你的旅程','这一次，由你走进花果山，去寻找瀑布背后的秘密。']];
 const quizzes={3:{q:'花果山位于哪一洲？',a:['东胜神洲','南赡部洲','西牛贺洲'],right:0,why:'花果山坐落于东胜神洲傲来国的海外。'},7:{q:'石猴由什么孕育而来？',a:['一株千年桃树','花果山顶的仙石','东海的一滴水'],right:1,why:'山顶仙石受天地精华，产下石卵，见风化作石猴。'},final:{q:'猴群为什么愿意拜石猴为王？',a:['他找到了许多仙桃','他打败了山中猛虎','他探明水帘洞，并平安返回'],right:2,why:'石猴兑现了探明水源、平安返回的约定，还为猴群寻到安居之所。'}};
+function enableGameAudio(){
+  if(muted)return;
+  try{
+    const AudioEngine=window.AudioContext||window.webkitAudioContext;
+    if(!AudioEngine)return;
+    audio??=new AudioEngine();
+    if(audio.state==='suspended')audio.resume().catch(()=>{});
+  }catch{}
+}
+document.addEventListener('pointerdown',enableGameAudio);
+document.addEventListener('keydown',enableGameAudio);
 function tone(f=440,d=.12){if(muted)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+d);}catch{}}
 function toast(s){$('toast').textContent=s;toastUntil=t+3.5;}
 function setSteps(n){for(let i=0;i<3;i++)$('step'+i).classList.toggle('active',i<=n);}
@@ -545,6 +556,9 @@ function updateAmbience(){
     source.start();
   }
   const quiet=muted||paused;
+  if(!quiet&&chapter===4&&mode==='play'&&fourthScene==='escape'&&heavenBossEngaged&&heavenGuards.at(-1)?.hp>0){
+    updateHeavenMusic();
+  }
   const inThird=chapter===3&&!['cover','end'].includes(mode);
   const sea=inThird&&thirdScene==='palace';
   const lava=inThird&&thirdScene==='underworld';
@@ -2712,9 +2726,9 @@ const fourthRoutes={
 };
 const fourthArea={clouds:'天庭 · 云阶',stable:'天庭 · 御马监',escape:'天庭 · 南天门外廊',cave:'花果山 · 水帘洞'};
 const heavenlyHorses=[
-  {x:289,coat:'#b27954',mane:'#604337'},
-  {x:518,coat:'#ddd0ac',mane:'#9e8769'},
-  {x:747,coat:'#797d86',mane:'#464a5c'}
+  {x:289,coat:'#b27954',mane:'#604337',light:'#d8a471',shade:'#80583f'},
+  {x:518,coat:'#ddd0ac',mane:'#9e8769',light:'#f6e7c2',shade:'#b1a283'},
+  {x:747,coat:'#797d86',mane:'#464a5c',light:'#a9acaf',shade:'#5b5f71'}
 ];
 const HEAVEN_GATE=1825;
 const HEAVEN_ARENA_LEFT=1354;
@@ -2729,6 +2743,7 @@ const heavenPosts=[
 ];
 let fourthScene='clouds', fedHorses=new Set(), heavenGuards=[], fourthComplete=false, fourthIntro=false;
 let heavenFireballs=[], heavenBolts=[], heavenBossMove=null, heavenBossTurn=0, heavenBossReady=0;
+let heavenBossEngaged=false, heavenImpact=null, heavenMusicStep=0, heavenMusicAt=0;
 function saveChapterFour(){
   return writeGameSave({
     chapter:4,phase:fourthScene,checkpoint,energy,fourthComplete,fed:[...fedHorses],
@@ -2745,6 +2760,10 @@ function clearHeavenCombat(){
   heavenFireballs=[];
   heavenBolts=[];
   heavenBossMove=null;
+  heavenBossEngaged=false;
+  heavenImpact=null;
+  heavenMusicStep=0;
+  heavenMusicAt=t;
   heavenBossTurn=0;
   heavenBossReady=t+1.1;
   for(const guard of heavenGuards)guard.castAt=0;
@@ -3008,25 +3027,72 @@ function drawHeavenAudience(){
     rect(491-i*10,410+i*6,146+i*20,2,gold);
   }
   drawThirdThrone(564,415,'#486e62','#d5ae6f');
-  poly([[531,400],[542,365],[585,365],[596,400]],'#975e46');
-  poly([[537,398],[548,369],[578,369],[590,398]],'#c18750');
-  rect(542,393,43,2,gold);rect(561,374,7,13,gold);
-  rect(549,350,31,22,'#d1a683');rect(546,346,37,5,'#3f3d41');
-  rect(554,337,22,10,'#5b4943');rect(559,338,11,3,'#e0ba75');
-  for(let i=0;i<7;i++)rect(548+i*5,350,1,8+i%2*2,gold);
-  rect(557,358,4,2,'#3f3b40');rect(571,358,4,2,'#3f3b40');
-  poly([[554,363],[577,363],[572,379],[566,386],[559,378]],'#423e40');
+  drawJadeEmperor(564,400);
   drawTaibai(335,426);
   drawHeavenOfficer(430,427,'thunder',1,false);
   drawHeavenOfficer(704,427,'flame',-1,false);
 }
+function drawJadeEmperor(x,y){
+  const gold='#e6ba70', ink='#3f343c';
+  ctx.save();
+  ctx.translate(x,y);
+  poly([[-38,1],[-32,-21],[-25,-36],[-14,-42],[14,-42],[25,-36],[32,-21],[38,1]],ink);
+  poly([[-35,-1],[-29,-20],[-23,-34],[-13,-39],[13,-39],[23,-34],[29,-20],[35,-1]],'#9b5540');
+  poly([[-30,-3],[-25,-20],[-17,-35],[-8,-35],[-12,-19],[-19,-3]],'#c5874e');
+  poly([[30,-3],[25,-20],[17,-35],[8,-35],[12,-19],[19,-3]],'#d49958');
+  poly([[-16,-36],[-5,-29],[6,-29],[16,-36],[14,-26],[6,-18],[-6,-18],[-14,-26]],gold);
+  rect(-30,-4,60,2,gold);
+  for(const side of [-1,1]){
+    const dx=side*24;
+    rect(dx-6,-20,12,7,'#b77a4e');
+    rect(dx-6,-15,12,2,'#f1d38a');
+    rect(dx-4,-13,8,4,'#d6ab85');
+  }
+  poly([[-9,-17],[0,-23],[9,-17],[9,-10],[0,-6],[-9,-10]],'#b17c4c');
+  rect(-5,-16,10,3,gold);rect(-1,-20,2,11,'#f8d98d');
+  rect(-13,-60,26,27,ink);rect(-11,-58,22,23,'#c69b79');
+  rect(4,-56,7,12,'#e0b38b');
+  rect(-9,-52,6,2,ink);rect(3,-52,6,2,ink);
+  rect(-8,-49,5,2,'#f3d1a0');rect(4,-49,5,2,'#f3d1a0');
+  rect(-6,-49,2,2,ink);rect(5,-49,2,2,ink);
+  poly([[-11,-44],[-5,-41],[6,-41],[11,-44],[10,-33],[5,-25],[1,-21],[-5,-27],[-10,-35]],ink);
+  rect(1,-38,3,11,'#62504e');
+  rect(-9,-67,18,8,'#5e4a46');rect(-5,-68,10,3,gold);
+  rect(-20,-64,40,5,ink);rect(-18,-64,36,2,'#e7c582');
+  for(let i=0;i<8;i++){
+    const px=-17+i*5, h=5+i%2*3;
+    rect(px,-59,1,h,gold);rect(px-1,-59+h,3,2,'#c4935e');
+  }
+  ctx.restore();
+}
 function drawTaibai(x,y){
-  poly([[x-20,y],[x-13,y-34],[x+11,y-36],[x+20,y]],'#53686a');
-  poly([[x-15,y-2],[x-10,y-32],[x+9,y-32],[x+16,y-2]],'#bac8b5');
-  rect(x-8,y-48,17,18,'#d4b395');rect(x-10,y-51,21,6,'#e9dfc8');
-  rect(x-4,y-56,8,6,'#e9dfc8');rect(x+4,y-43,3,2,'#47443e');
-  poly([[x-7,y-36],[x+10,y-36],[x+3,y-19],[x-2,y-22]],'#f2e9d4');
-  rect(x-15,y-22,26,4,'#a98b65');rect(x+9,y-24,4,8,'#ebcb8a');
+  ctx.save();
+  ctx.translate(x,y);
+  const ink='#3a4a51', silk='#a6bbad', edge='#e1dcc4';
+  poly([[-25,1],[-18,-19],[-16,-34],[-8,-42],[12,-40],[20,-29],[25,1]],ink);
+  poly([[-22,-1],[-16,-20],[-14,-33],[-7,-39],[11,-37],[18,-28],[22,-1]],silk);
+  poly([[-18,-28],[-10,-34],[-7,-22],[-13,-9],[-20,-8]],'#d2d9c6');
+  poly([[7,-37],[15,-30],[20,-10],[11,-7],[8,-21]],'#e7e0c6');
+  poly([[-8,-35],[-4,-36],[11,-17],[8,-14],[2,-23]],'#f1e6c8');
+  rect(-17,-18,33,3,'#94765d');rect(-1,-19,5,5,'#d9b37c');
+  rect(-17,-2,36,2,'#788d82');
+  rect(-10,-58,22,24,ink);rect(-8,-56,18,21,'#cfaa88');
+  rect(3,-52,7,8,'#e5bd99');
+  rect(-8,-56,3,14,edge);rect(8,-55,3,9,edge);
+  rect(-4,-51,5,2,edge);rect(4,-51,5,2,edge);
+  rect(-2,-48,2,2,ink);rect(6,-48,2,2,ink);
+  poly([[-9,-43],[-2,-41],[5,-42],[12,-45],[10,-36],[6,-31],[2,-24],[-3,-27],[-6,-34]],'#eee4cb');
+  poly([[4,-40],[8,-40],[6,-34],[2,-27],[2,-33]],'#bbc3b3');
+  rect(-10,-60,23,5,'#dcdbc4');rect(-4,-65,9,6,'#b4c5bb');
+  rect(-3,-63,7,2,'#e7ddbe');
+  ctx.save();
+  ctx.translate(12,-25);
+  ctx.rotate(.53);
+  rect(-1,-18,3,25,'#9c7954');
+  poly([[-2,-18],[-7,-28],[-6,-34],[0,-28],[6,-32],[5,-23],[2,-18]],'#efdfbb');
+  rect(-1,-29,1,10,'#fff3d6');rect(-3,-19,7,2,'#d4aa6b');
+  ctx.restore();
+  ctx.restore();
 }
 function drawCloudRoad(c){
   rect(0,0,W,H,lightGradient(0,0,0,H,[[0,'#628daf'],[.57,'#c0d9d4'],[1,'#f6dbad']]));
@@ -3117,23 +3183,34 @@ function drawHeavenStable(c){
 function drawHeavenHorse(horse,x,y,fed){
   const ink='#4a403c', dip=fed?Math.round(5+Math.sin(t*4)*3):Math.round(Math.sin(t*3));
   contactShadow(x,y,46);
-  poly([[x-24,y-32],[x-39,y-27],[x-47,y-13],[x-40,y-16],[x-28,y-25]],horse.mane);
+  const tail=Math.sin(t*3.4)*3;
+  poly([[x-24,y-34],[x-38,y-30],[x-48,y-19+tail],[x-50,y-9+tail],
+    [x-42,y-14+tail],[x-34,y-24],[x-26,y-26]],ink);
+  poly([[x-27,y-32],[x-39,y-27],[x-47,y-16+tail],[x-43,y-15+tail],[x-34,y-25]],horse.mane);
   for(const dx of [-23,-12,8,18]){
     rect(x+dx,y-22,6,21,ink);
-    rect(x+dx+1,y-21,4,15,horse.coat);
+    rect(x+dx+1,y-21,4,15,dx===-12||dx===18?horse.shade:horse.coat);
+    rect(x+dx-1,y-5,8,4,ink);rect(x+dx,y-5,5,1,'#8f7e69');
   }
   poly([[x-31,y-25],[x-29,y-42],[x-16,y-48],[x+15,y-45],[x+26,y-34],
     [x+20,y-19],[x-18,y-18]],ink);
   poly([[x-29,y-26],[x-27,y-41],[x-15,y-46],[x+15,y-43],[x+23,y-34],
     [x+18,y-22],[x-17,y-20]],horse.coat);
+  poly([[x-25,y-29],[x-14,y-24],[x+13,y-24],[x+21,y-32],[x+17,y-21],
+    [x-16,y-20]],horse.shade);
+  poly([[x-25,y-39],[x-15,y-45],[x+14,y-42],[x+18,y-37],[x+8,y-39],[x-13,y-40]],horse.light);
   poly([[x+6,y-39],[x+13,y-59+dip],[x+23,y-69+dip],[x+32,y-59+dip],
     [x+29,y-42],[x+24,y-24],[x+13,y-25]],horse.mane);
   poly([[x+12,y-37],[x+19,y-58+dip],[x+28,y-64+dip],[x+37,y-56+dip],
     [x+42,y-48+dip],[x+37,y-44+dip],[x+26,y-49+dip],[x+21,y-33]],horse.coat);
   rect(x+26,y-66+dip,3,7,ink);rect(x+32,y-56+dip,2,2,ink);
+  poly([[x+22,y-57+dip],[x+28,y-63+dip],[x+35,y-56+dip],[x+37,y-51+dip],
+    [x+34,y-52+dip],[x+28,y-57+dip]],horse.light);
+  rect(x+32,y-56+dip,1,1,'#fff1cd');
   rect(x+35,y-49+dip,6,2,horse.mane);rect(x+25,y-58+dip,2,12,'#c69b64');
+  rect(x+35,y-51+dip,2,2,'#e5bd77');rect(x+25,y-50+dip,13,1,'#8f6247');
 }
-function drawHeavenOfficer(x,y,kind,face,attacking,bladeScale=1){
+function drawHeavenOfficer(x,y,kind,face,attacking,bladeScale=1,swordAngle=attacking?-.8:.21){
   ctx.save();
   ctx.translate(x,y);
   ctx.scale(face,1);
@@ -3150,9 +3227,28 @@ function drawHeavenOfficer(x,y,kind,face,attacking,bladeScale=1){
   rect(-8,-42,17,12,'#cba588');rect(5,-38,3,2,ink);
   rect(-11,-46,22,6,ink);rect(-8,-48,16,6,armor);
   rect(-8,-44,16,2,trim);
+  rect(-10,-32,3,11,ink);rect(9,-32,3,11,ink);
+  for(let row=0;row<3;row++){
+    const yy=-16+row*4;
+    for(let col=0;col<3;col++){
+      const xx=-9+col*7+(row%2);
+      rect(xx,yy,5,2,trim);rect(xx,yy+2,5,1,ink);
+    }
+  }
+  if(keeper){
+    rect(-13,-47,26,3,'#57433b');rect(-7,-51,14,5,'#6f5446');
+    rect(-5,-49,10,2,'#ad8761');
+    rect(-7,-34,4,1,'#664738');rect(-2,-34,6,1,'#664738');
+  }else{
+    poly([[-11,-46],[-9,-50],[-3,-54],[4,-54],[10,-49],[12,-44]],ink);
+    poly([[-9,-46],[-7,-49],[-2,-52],[4,-52],[9,-48],[9,-45]],armor);
+    rect(-8,-45,17,2,trim);
+    rect(-1,-51,3,7,trim);
+    rect(4,-38,3,1,'#6c4d46');
+  }
   if(general)poly([[-6,-48],[-11,-56],[3,-60],[8,-55],[0,-49]],'#d7735e');
   ctx.translate(11,-20);
-  ctx.rotate(attacking?-.8:.21);
+  ctx.rotate(swordAngle);
   rect(-1,-(keeper?21:6),3,keeper?26:11,'#8f684b');
   if(!keeper){
     ctx.save();
@@ -3181,8 +3277,15 @@ function drawHeavenGuard(guard,c){
     ctx.save();
     ctx.translate(x,guard.y);
     ctx.scale(1.52,1.52);
-    const growth=move?.kind==='slam'?1+1.15*Math.min(1,(t-move.at)/3):1;
-    drawHeavenOfficer(0,0,'general',guard.dir,!!move,growth);
+    const impact=heavenImpact?.kind==='slam'&&t-heavenImpact.at<.39;
+    const growth=move?.kind==='slam'?1+1.15*Math.min(1,(t-move.at)/3):impact?1.65:1;
+    const dive=move?.kind==='slam'?Math.max(0,1-(move.ends-t)/.38):0;
+    const angle=move?.kind==='lightning'?-.14:move?.kind==='slam'?-.78+dive*2.5:impact?1.72:.21;
+    if(dive>0){
+      poly([[-10,-4],[-33,-63],[-17,-93],[-1,-29],[30,-65],[20,-9]],'#ffb76350');
+      glow(12,-18,58,'#ffd08075');
+    }
+    drawHeavenOfficer(0,0,'general',guard.dir,!!move,growth,angle);
     ctx.restore();
     return;
   }
@@ -3205,6 +3308,29 @@ function drawHeavenFire(x,y,r){
 function drawHeavenHazards(c){
   const move=heavenBossMove;
   const alpha=.15+.12*Math.sin(t*11);
+  if(heavenImpact){
+    const age=t-heavenImpact.at;
+    if(age<.64){
+      const x=heavenImpact.x-c;
+      if(heavenImpact.kind==='slam'){
+        const reach=32+age*233;
+        glow(x,419,reach,`#ffd78b${Math.round(120*(1-age/.64)).toString(16).padStart(2,'0')}`);
+        ctx.save();
+        ctx.globalAlpha=1-age/.64;
+        poly([[x-reach,428],[x-reach*.65,421],[x-24,423],[x-7,405],
+          [x+11,423],[x+reach*.6,417],[x+reach,428],[x+18,433],[x-20,431]],'#ffc780');
+        for(let i=0;i<9;i++){
+          const side=i%2?1:-1;
+          const dx=side*(12+i*5+age*(62+i*8));
+          const dy=Math.max(0,(70+i*12)*age-140*age*age);
+          rect(x+dx,424-dy,5+i%3,3+i%2,'#b07e61');
+        }
+        ctx.restore();
+      }else if(age<.19){
+        rect(0,0,W,H,`rgba(201,229,255,${.22*(1-age/.19)})`);
+      }
+    }
+  }
   if(move?.kind==='lightning'){
     for(const x of move.columns){
       rect(x-c-24,138,48,290,`rgba(147,209,242,${alpha})`);
@@ -3322,7 +3448,13 @@ function updateHeavenFireballs(dt){
 function updateHeavenBoss(dt){
   const boss=heavenGuards.at(-1);
   const px=player.x+12;
-  const active=boss.hp>0&&px>=HEAVEN_ARENA_LEFT-48;
+  if(boss.hp>0&&px>=HEAVEN_ARENA_LEFT-48&&!heavenBossEngaged){
+    heavenBossEngaged=true;
+    heavenMusicAt=t;
+    chirp(147,98,.45,0,.13,'triangle');
+    noiseHit(.38,.16,550,110);
+  }
+  const active=boss.hp>0&&heavenBossEngaged;
   $('heavenBossHud').hidden=!active;
   const warning=$('heavenWarning');
   if(!active){
@@ -3346,11 +3478,17 @@ function updateHeavenBoss(dt){
       move.columns=[middle-82,middle,middle+82];
     }
     heavenBossMove=move;
+    playHeavenSkillCue(kind);
+    scatter(boss.x,boss.y-38,24,kind==='lightning'?['#d7f1ff','#88b0e5']:['#fff0ac','#fa9956'],105);
   }
   const move=heavenBossMove;
   if(move.kind==='charge'&&move.rushing){
     warning.hidden=true;
     boss.x=Math.max(HEAVEN_ARENA_LEFT+24,Math.min(HEAVEN_ARENA_RIGHT-24,boss.x+move.dir*580*dt));
+    if(t>=(move.sparkAt??0)){
+      move.sparkAt=t+.05;
+      scatter(boss.x-move.dir*24,394,5,['#ffc46d','#f68146','#ffedbc'],104);
+    }
     if(!move.hit&&Math.abs(boss.x-px)<49&&Math.abs(player.y+17-394)<47){
       move.hit=true;
       heavenPlayerHit(40);
@@ -3365,9 +3503,21 @@ function updateHeavenBoss(dt){
   if(warning.textContent!==message)warning.textContent=message;
   warning.hidden=false;
   if(move.kind==='slam'){
-    const lift=Math.min(1,(t-move.at)/.48);
-    boss.y=428-Math.sin(lift*Math.PI/2)*72;
-    boss.x=move.from+(move.target-move.from)*lift*.7;
+    const lift=Math.min(1,(t-move.at)/.55);
+    const plunge=Math.max(0,Math.min(1,1-left/.38));
+    const drop=plunge*plunge;
+    boss.y=428-(1-drop)*Math.sin(lift*Math.PI/2)*105;
+    boss.x=move.from+(move.target-move.from)*(lift*.76+drop*.24);
+    if(plunge>0&&!move.dropping){
+      move.dropping=true;
+      noiseHit(.36,.35,4400,280);
+      chirp(265,78,.33,0,.14,'triangle');
+    }
+  }
+  if(move.kind!=='charge'&&left>0&&t>=(move.pulseAt??move.at+.55)){
+    move.pulseAt=t+.52;
+    chirp(move.kind==='lightning'?570:135,move.kind==='lightning'?940:90,.18,0,.075,'triangle');
+    scatter(boss.x,boss.y-75,9,move.kind==='lightning'?['#d0f3ff','#9aadea']:['#ffd895','#ef884b'],82);
   }
   if(left>0)return;
   if(move.kind==='charge'){
@@ -3376,18 +3526,25 @@ function updateHeavenBoss(dt){
     move.rushing=true;
     move.ends=t+.74;
     warning.hidden=true;
-    noiseHit(.38,.27,1000,200);
+    noiseHit(.38,.35,2200,180);
+    chirp(160,65,.52,0,.19,'sawtooth');
+    scatter(boss.x,394,44,['#ffe9a4','#ffad55','#dc5642'],155);
   }else if(move.kind==='lightning'){
     strikeHeavenLightning(move.columns);
+    heavenImpact={kind:'lightning',x:move.columns[1],at:t};
+    noiseHit(.5,.32,1900,65,.03);
     if(move.columns.some(x=>Math.abs(x-px)<27))heavenPlayerHit(30);
     finishHeavenBossMove();
   }else{
     boss.x=move.target;
     boss.y=428;
     if(Math.abs(move.target-px)<79&&player.y+player.h>375)heavenPlayerHit(50);
+    heavenImpact={kind:'slam',x:move.target,at:t,dir:boss.dir};
     effectRings.push({x:move.target,y:423,age:0,reach:116,color:'#f6aa6b'});
-    scatter(move.target,422,62,['#ffdc96','#e88860','#f8f2c5'],165);
-    noiseHit(.37,.44,680,85);
+    scatter(move.target,422,86,['#ffdc96','#e88860','#f8f2c5'],205);
+    noiseHit(.43,.49,1800,55);
+    noiseHit(.21,.29,5000,390);
+    chirp(100,36,.4,0,.24);
     finishHeavenBossMove();
   }
 }
@@ -3395,4 +3552,39 @@ function finishHeavenBossMove(){
   heavenBossMove=null;
   heavenBossReady=t+1.25;
   $('heavenWarning').hidden=true;
+}
+
+const heavenMotif=[146.83,174.61,196,0,220,196,174.61,0,
+  146.83,0,196,220,261.63,220,196,0,
+  293.66,261.63,220,196,220,0,174.61,0,
+  196,174.61,146.83,0,130.81,146.83,0,0];
+
+function updateHeavenMusic(){
+  if(t<heavenMusicAt)return;
+  heavenMusicAt=t+.235;
+  const beat=heavenMusicStep++%heavenMotif.length;
+  const note=heavenMotif[beat];
+  if(beat%4===0)chirp(83,43,.19,0,.12);
+  if(beat%8===0){
+    const root=beat%16===0?73.42:65.41;
+    chirp(root,root,.43,0,.082,'triangle');
+    chirp(root*1.5,root*1.5,.35,0,.036,'triangle');
+  }
+  if(note){
+    chirp(note*1.014,note,.21,0,.089,'triangle');
+    chirp(note*2,note*2,.13,0,.027);
+  }
+  if(beat%8===6)noiseHit(.09,.048,3100,500);
+}
+function playHeavenSkillCue(kind){
+  if(kind==='lightning'){
+    noiseHit(.29,.16,4300,1200);
+    chirp(342,810,.41,0,.12,'triangle');
+  }else if(kind==='slam'){
+    chirp(110,57,.31,0,.19,'triangle');
+    noiseHit(.32,.15,650,125);
+  }else{
+    noiseHit(.34,.22,1400,5200);
+    chirp(93,233,.38,0,.12,'triangle');
+  }
 }
