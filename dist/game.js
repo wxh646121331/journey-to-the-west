@@ -25,12 +25,12 @@ function placePlayerOnGround(route,x){
   Object.assign(player,{x:safeX,y:floor.y-player.h,vx:0,vy:0,ground:true});
   jumpRequestedUntil=-1;
 }
-function reset(){$('practiceNext').hidden=true;clearTransformation();slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
+function reset(){$('practiceNext').hidden=true;clearTransformation();slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;effectRings.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
-function showQuiz(q,final=false){activeQuiz={...q,final};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
-function answer(i){if(quizDone)return;quizDone=true;const correct=i===activeQuiz.right;if(correct){score++;tone(660);}else tone(180,.2);$('dialog').innerHTML=`<div class="speaker">山海问答</div><div class="line">${correct?'✦ 回答正确！':'正确答案：'+ 'ABC'[activeQuiz.right]+' · '+activeQuiz.a[activeQuiz.right]}</div><div class="feedback ${correct?'correct':''}">${activeQuiz.why}</div><span class="next">点击继续 ▾</span>`;}
-function advance(){if(paused)return;if(mode==='story'){storyIndex++;if(quizzes[storyIndex])showQuiz(quizzes[storyIndex]);else if(storyIndex>=lines.length)startBurst();else showLine();}else if(mode==='quiz'&&quizDone){const final=activeQuiz.final;activeQuiz=null;if(final)talk('猴群 · 拜见美猴王','多亏你找到了这处洞天！我们说话算数，从今往后，你便是我们的美猴王！',approachThrone);else{mode='story';showLine();}}else if(mode==='talk'){closeDialog();}}
+function showQuiz(q,final=false,next=null){activeQuiz={...q,final,next};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
+function answer(i){if(quizDone)return;quizDone=true;const correct=i===activeQuiz.right;if(correct){if(!activeQuiz.next)score++;tone(660);}else tone(180,.2);$('dialog').innerHTML=`<div class="speaker">山海问答</div><div class="line">${correct?'✦ 回答正确！':'正确答案：'+ 'ABC'[activeQuiz.right]+' · '+activeQuiz.a[activeQuiz.right]}</div><div class="feedback ${correct?'correct':''}">${activeQuiz.why}</div><span class="next">点击继续 ▾</span>`;}
+function advance(){if(paused)return;if(mode==='story'){storyIndex++;if(quizzes[storyIndex])showQuiz(quizzes[storyIndex]);else if(storyIndex>=lines.length)startBurst();else showLine();}else if(mode==='quiz'&&quizDone){const {final,next}=activeQuiz;activeQuiz=null;if(next){$('dialog').hidden=true;mode='play';next();}else if(final)talk('猴群 · 拜见美猴王','多亏你找到了这处洞天！我们说话算数，从今往后，你便是我们的美猴王！',approachThrone);else{mode='story';showLine();}}else if(mode==='talk'){closeDialog();}}
 function startBurst(){mode='burst';burst=0;$('dialog').hidden=true;$('hint').textContent='仙石迸裂，石猴初生。';tone(110,.8);}
 function beginPlay(){mode='play';showHealth();$('stamina').hidden=false;renderStamina();$('stage').focus?.({preventScroll:true});$('dialog').hidden=true;$('hud').hidden=false;$('touch').hidden=false;setSteps(1);showQuest();$('hint').textContent='方向键移动，空格跳跃；靠近猴群按 E 交谈';toast('你成为了石猴。向右走，沿溪流寻找猴群。');save();}
 function showQuest(){
@@ -166,9 +166,9 @@ if(mode==='burst'){
     }
     entranceMusic();
   }
-  burst+=dt;if(burst>3.7)beginPlay();return;}if(mode!=='play')return;const p=player;updateRun(dt);const wasGrounded=p.ground,oldX=p.x,oldBottom=p.y+p.h;p.x=Math.max(0,Math.min(3430,p.x+p.vx*dt));if(!challenged&&p.x>2245){p.x=2245;if(oldX<2245)toast('先和猴群交谈，完成瀑布前的约定。');}
+  burst+=dt;if(burst>3.7)beginPlay();return;}if(mode!=='play')return;const p=player;updateRun(dt);const wasGrounded=p.ground,oldX=p.x;p.x=Math.max(0,Math.min(3430,p.x+p.vx*dt));if(!challenged&&p.x>2245){p.x=2245;if(oldX<2245)toast('先和猴群交谈，完成瀑布前的约定。');}
 if(escort)moveFollowers(dt);
-p.vy+=1170*dt;p.y+=p.vy*dt;p.ground=false;for(const f of platforms){if(p.x+p.w>f.x&&p.x<f.x+f.w&&oldBottom<=f.y+3&&p.y+p.h>=f.y&&p.vy>=0){p.y=f.y-p.h;p.vy=0;p.ground=true;}}if(p.ground&&p.vx&&t>=stepAt){stepAt=t+.26;footstep();}
+resolvePlayerVertical(platforms,dt);if(p.ground&&p.vx&&t>=stepAt){stepAt=t+.26;footstep();}
 if(!wasGrounded&&p.ground){footstep(true);}
 if(!wasGrounded&&p.ground)scatter(p.x+12,p.y+p.h,10,['#d5bf8c','#81975d']);
 if((oldX<2317)!==(p.x<2317))scatter(2317,p.y+15,60,['#d4fff0','#8fcfc4','#f5f9db'],130);
@@ -203,10 +203,10 @@ function drawWukongArmor(stride){
   rect(3,33-stride,10,3,gold);
 }
 function peach(x,y){rect(x-6,y-6,13,11,'#e5a186');rect(x-3,y-8,9,14,'#e9b38c');rect(x-7,y-3,3,6,'#c88373');rect(x,y-11,7,4,'#8eae62');rect(x-2,y-10,3,5,'#9fc571');}
-function drawBackground(){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#153e3d');g.addColorStop(.65,'#719e83');g.addColorStop(1,'#aec0a0');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);const c=(mode==='cover'||mode==='story'||mode==='quiz'&&!activeQuiz?.final||mode==='burst')?0:cam;rect(715-c*.04,49,57,57,'#d5cf92');rect(725-c*.04,39,37,76,'#d5cf92');for(let layer=0;layer<3;layer++){const color=['#49796b','#356757','#214e40'][layer];for(let i=-1;i<6;i++)mountain(i*290-c*(.09+layer*.1),110+layer*55+Math.sin(i*2)*35,390,340,color);}for(let i=0;i<7;i++){const x=((i*203+t*(2+i%3)-c*.08)%1250)-140;rect(x,100+i%3*51,105,5,'#a1b69a44');rect(x+18,94+i%3*51,55,6,'#a1b69a44');}for(let i=0;i<12;i++){const x=i*97+Math.sin(t*.2+i)*16;rect(x,340+Math.sin(t+i)*15,90,3,'#b5c6a33a');}return c;}
+function drawBackground(){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#153e3d');g.addColorStop(.65,'#719e83');g.addColorStop(1,'#aec0a0');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);const c=(mode==='cover'||mode==='story'||mode==='quiz'&&!activeQuiz?.final&&!activeQuiz?.next||mode==='burst')?0:cam;rect(715-c*.04,49,57,57,'#d5cf92');rect(725-c*.04,39,37,76,'#d5cf92');for(let layer=0;layer<3;layer++){const color=['#49796b','#356757','#214e40'][layer];for(let i=-1;i<6;i++)mountain(i*290-c*(.09+layer*.1),110+layer*55+Math.sin(i*2)*35,390,340,color);}for(let i=0;i<7;i++){const x=((i*203+t*(2+i%3)-c*.08)%1250)-140;rect(x,100+i%3*51,105,5,'#a1b69a44');rect(x+18,94+i%3*51,55,6,'#a1b69a44');}for(let i=0;i<12;i++){const x=i*97+Math.sin(t*.2+i)*16;rect(x,340+Math.sin(t+i)*15,90,3,'#b5c6a33a');}return c;}
 function drawCover(){drawBackground();mountain(-90,260,530,330,'#153e34');mountain(670,230,450,370,'#163e32');tree(60,470,1.45);tree(890,430,1.1);rect(23,470,80,6,'#355943');rect(863,430,63,5,'#355943');rect(675,257,42,280,'#87b7aa');for(let i=0;i<9;i++)rect(678+i*5,260+(t*65+i*29)%270,2,40,'#d7e6c276');poly([[380,540],[397,460],[429,440],[434,418],[520,418],[531,447],[564,460],[601,540]],'#274b39');rect(422,420,113,10,'#638052');if(mode!=='burst'||burst<1.5){poly([[452,416],[443,370],[455,343],[493,338],[512,360],[507,417]],'#8b9471');rect(457,349,15,50,'#a7ac82');poly([[480,342],[477,369],[489,378],[481,409]],'#daca8c');}if(mode==='burst'){if(burst>1.5)monkey(478,Math.min(383,250+(burst-1.5)*90),1,false,1.4);const alpha=Math.max(0,1-Math.abs(burst-1.5)*3);rect(0,0,W,H,`rgba(255,242,189,${alpha})`);}for(let i=0;i<21;i++){const x=(i*143+Math.sin(t+i)*30)%960,y=240+(i*47)%270+Math.sin(t*.8+i)*12;rect(x,y,2,2,i%2?'#d7cc87':'#7dbb83');}}
 function drawWorld(){drawBackground();const c=cam;rect(0,485,960,55,'#497f74');for(let i=0;i<25;i++)rect((i*53+t*18)%1000,490+i%4*12,25,2,'#99bc9c55');for(let i=0;i<13;i++){const x=i*295-c;const ground=platforms.find(p=>i*295>=p.x+9&&i*295<p.x+p.w-9);if(ground&&i*295<2525&&x>-160&&x<1100)tree(x,ground.y,.8+i%3*.22);}if(player.x>2100){rect(2525-c,0,1000,90,'#15362e');for(let i=0;i<9;i++)poly([[2525+i*130-c,80],[2555+i*130-c,140+i%3*20],[2577+i*130-c,80]],'#15362e');}
-for(const f of platforms){if(f.x-c>1000||f.x+f.w-c<-20)continue;rect(f.x-c,f.y,f.w,110,'#344b36');rect(f.x-c,f.y,f.w,8,'#8a9b5f');rect(f.x-c,f.y+8,f.w,9,'#536b42');for(let i=0;i<f.w;i+=29){rect(f.x+i-c,f.y+30+(i%3)*13,18,5,'#465c3d');rect(f.x+i-c,f.y+19,9,4,'#263f32');}for(let i=0;i<f.w;i+=18)rect(f.x+i-c,f.y-3,3,6,'#a1ae68');}
+for(const f of platforms){if(f.x-c>1000||f.x+f.w-c<-20)continue;rect(f.x-c,f.y,f.w,110,'#344b36');rect(f.x-c,f.y,f.w,8,'#8a9b5f');rect(f.x-c,f.y+8,f.w,9,'#536b42');drawStoneFace(f.x-c,f.y,f.w,'#abc08944');for(let i=0;i<f.w;i+=29){rect(f.x+i-c,f.y+30+(i%3)*13,18,5,'#465c3d');rect(f.x+i-c,f.y+19,9,4,'#263f32');}for(let i=0;i<f.w;i+=18)rect(f.x+i-c,f.y-3,3,6,'#a1ae68');}
 rect(1980-c,350,65,8,'#a59c68');rect(2005-c,330,7,26,'#8a8355');rect(1990-c,326,50,20,'#b7a36f');ctx.fillStyle='#304b35';ctx.font='10px serif';ctx.fillText('水帘洞 →',1994-c,340);
 for(const [i,follower] of followers.entries()){
   monkey(follower.x-c,follower.y+3,escort?follower.face:i%2?-1:1,follower.ground&&follower.moving,.85);
@@ -377,7 +377,12 @@ function updateAmbience(){
 }
 
 const particles=[];
+const effectRings=[];
 function scatter(x,y,count,colors,speed=65){
+  if(count>=35){
+    effectRings.push({x,y,age:0,reach:20+speed*.32,color:colors[0]});
+    if(effectRings.length>12)effectRings.shift();
+  }
   for(let i=0;i<count;i++){
     const angle=Math.random()*Math.PI*2;
     const force=speed*(.2+Math.random()*.8);
@@ -385,13 +390,17 @@ function scatter(x,y,count,colors,speed=65){
     particles.push({
       x,y,vx:Math.cos(angle)*force,vy:Math.sin(angle)*force-speed*.45,
       life, duration:life, size:.5+Math.floor(Math.random()*5)*.5,
-      color:colors[i%colors.length]
+      color:colors[i%colors.length],spark:i%3===0
     });
   }
   if(particles.length>480)particles.splice(0,particles.length-480);
 }
 
 function updateParticles(dt){
+  for(let i=effectRings.length-1;i>=0;i--){
+    effectRings[i].age+=dt;
+    if(effectRings[i].age>.52)effectRings.splice(i,1);
+  }
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
     p.life-=dt;
@@ -403,7 +412,7 @@ function updateParticles(dt){
 }
 
 function drawEffects(){
-  const inWorld=mode==='play'||mode==='talk'||mode==='coronation'||mode==='end'||(mode==='quiz'&&activeQuiz?.final);
+  const inWorld=mode==='play'||mode==='talk'||mode==='coronation'||mode==='end'||(mode==='quiz'&&(activeQuiz?.final||activeQuiz?.next));
   const offset=inWorld?cam:0;
   const waterfall=inWorld?2317-cam:696;
   if(waterfall>-60&&waterfall<W+60){
@@ -425,13 +434,78 @@ function drawEffects(){
       rect(478+Math.cos(angle)*radius,383+Math.sin(angle)*radius*.61,1.5,1,'#fff1b5');
     }
   }
+  drawParticles(offset);
+}
+function drawParticles(camera){
+  for(const ring of effectRings){
+    const progress=ring.age/.52;
+    const radius=5+ring.reach*Math.sqrt(progress);
+    ctx.globalAlpha=(1-progress)*.72;
+    for(let i=0;i<29;i++){
+      const angle=i*Math.PI*2/29;
+      rect(ring.x-camera+Math.cos(angle)*radius,ring.y+Math.sin(angle)*radius*.67,2.4,1.7,ring.color);
+    }
+  }
   for(const p of particles){
-    ctx.globalAlpha=Math.min(1,p.life/p.duration*1.7);
-    rect(p.x-offset,p.y,p.size,p.size,p.color);
+    const alpha=Math.min(1,p.life/p.duration*1.6);
+    const x=p.x-camera;
+    if(p.spark){
+      ctx.globalAlpha=alpha*.37;
+      for(let i=1;i<=3;i++)rect(x-p.vx*i*.015,p.y-p.vy*i*.015,p.size+.5,p.size+.5,p.color);
+      ctx.globalAlpha=alpha*.25;
+      rect(x-2,p.y-2,p.size+4,p.size+4,p.color);
+    }
+    ctx.globalAlpha=alpha;
+    rect(x,p.y,p.size,p.size,p.color);
+    if(p.spark&&p.size>1.3){
+      ctx.globalAlpha=alpha*.9;
+      rect(x,p.y,.8,.8,'#fff6da');
+    }
   }
   ctx.globalAlpha=1;
 }
-function frame(now){const dt=Math.min(.032,(now-last)/1000||.016);last=now;if(!paused)t+=dt;update(dt);ctx.setTransform(PIXEL_SCALE,0,0,PIXEL_SCALE,0,0);ctx.imageSmoothingEnabled=false;if(['cover','story','burst'].includes(mode)||(mode==='quiz'&&!activeQuiz?.final))drawCover();else if(chapter===2)drawChapterTwo();else if(chapter===3)drawChapterThree();else drawWorld();if(chapter===1)drawEffects();drawDamageNumbers();if(t>toastUntil)$('toast').textContent='';requestAnimationFrame(frame);}requestAnimationFrame(frame);
+function drawStoneFace(x,y,width,glint){
+  if(x+width<0||x>W)return;
+  const start=Math.max(8,Math.floor(-x/23)*23);
+  const end=Math.min(width-7,W-x+22);
+  for(let i=start;i<end;i+=23){
+    const seam=12+(Math.floor(i/23)*13)%24;
+    rect(x+i,y+seam,13,1,'#10252854');
+    rect(x+i+9,y+seam+1,1,5,'#10252840');
+    rect(x+i+2,y+seam-2,5,1,glint);
+    if(Math.floor(i/23)%3===0){
+      rect(x+i+5,y+46,11,1,'#10252842');
+      rect(x+i+9,y+47,1,5,'#10252842');
+    }
+  }
+}
+function drawAtmosphere(){
+  const sea=chapter===3&&thirdScene==='palace';
+  const ember=chapter===3&&thirdScene==='underworld';
+  const color=sea?'#b8f2e4':ember?'#ffb982':'#e9efbc';
+  const cover=['cover','story','burst'].includes(mode)||(mode==='quiz'&&!activeQuiz?.final&&!activeQuiz?.next);
+  const camera=cover?0:cam;
+  if(!ember&&!(chapter===3&&hallEntered)){
+    for(let i=0;i<4;i++){
+      const x=610+i*68-camera*.05+Math.sin(t*.18+i)*13;
+      poly([[x,0],[x+17,0],[x-107,373],[x-151,373]],sea?'#a3e9da0e':'#fff0bb0b');
+    }
+  }
+  for(let i=0;i<36;i++){
+    const phase=(i*.17+t*(.09+i%4*.017))%1;
+    const x=((i*89+Math.sin(t*.72+i)*23-camera*.16)%W+W)%W;
+    const y=55+i*47%428+Math.sin(t*.54+i)*13;
+    ctx.globalAlpha=.07+Math.sin(phase*Math.PI)*.27;
+    rect(x,y,i%6===0?2.5:1.25,i%6===0?2.5:1.25,color);
+    if(i%9===0){
+      ctx.globalAlpha*=.45;
+      rect(x-2,y+1,7,.5,color);
+      rect(x+1,y-2,.5,7,color);
+    }
+  }
+  ctx.globalAlpha=1;
+}
+function frame(now){const dt=Math.min(.032,(now-last)/1000||.016);last=now;if(!paused)t+=dt;update(dt);ctx.setTransform(PIXEL_SCALE,0,0,PIXEL_SCALE,0,0);ctx.imageSmoothingEnabled=false;if(['cover','story','burst'].includes(mode)||(mode==='quiz'&&!activeQuiz?.final&&!activeQuiz?.next))drawCover();else if(chapter===2)drawChapterTwo();else if(chapter===3)drawChapterThree();else drawWorld();if(chapter===1)drawEffects();drawAtmosphere();drawDamageNumbers();if(t>toastUntil)$('toast').textContent='';requestAnimationFrame(frame);}requestAnimationFrame(frame);
 
 let stamina=100, flightTrialDone=false, ambienceAt=0;
 let chapter=1, region='cave', energy=0, learned=false, transformedUntil=0, voyageTime=0, dockWait=0;
@@ -504,8 +578,11 @@ function chapterTwoDialogue(lines,done){
   function next(){
     if(index===lines.length){done();return;}
     secondDialogueLine=index;
-    const [speaker,line]=lines[index++];
-    talk(speaker,line,next);
+    const beat=lines[index++];
+    if(Array.isArray(beat)){
+      const [speaker,line]=beat;
+      talk(speaker,line,next);
+    }else showQuiz(beat,false,next);
   }
   next();
 }
@@ -576,6 +653,7 @@ function arriveAcrossSea(){
   chapterTwoSave();
   chapterTwoDialogue([
     ['海上','一叶帆船乘风破浪。美猴王漂过南赡部洲，又渡西海，终于来到西牛贺洲。'],
+    {q:'美猴王渡过西海后到了哪里？',a:['东胜神洲','西牛贺洲','天庭'],right:1,why:'悟空先到了南赡部洲，又渡西海，才抵达西牛贺洲。'},
     ['西牛贺洲','岸边有人指向远山。山中有一处洞府，名为斜月三星洞。']
   ],()=>openSecondRoute('拜见菩提祖师'));
 }
@@ -586,7 +664,8 @@ function interactChapterTwo(){
   chapterTwoDialogue([
     ['菩提祖师','你越海寻来，求的是什么？'],
     ['美猴王','弟子愿拜您为师，学习长生与变化之道。'],
-    ['菩提祖师','好。赐你姓孙，法名悟空。今日先试一试七十二变。']
+    ['菩提祖师','好。赐你姓孙，法名悟空。今日先试一试七十二变。'],
+    {q:'菩提祖师给美猴王起了什么法名？',a:['悟净','悟能','悟空'],right:2,why:'菩提祖师赐他姓孙，法名悟空。'}
   ],()=>{
     learned=true;
     checkpoint=1640;
@@ -752,25 +831,56 @@ function updateTransformation(dt,route){
   cam+=(Math.max(0,Math.min(route.at(-1).x+route.at(-1).w-W,player.x-315))-cam)*Math.min(1,dt*7);
   return true;
 }
+function resolvePlayerVertical(route,dt){
+  const p=player;
+  const oldTop=p.y;
+  const oldBottom=p.y+p.h;
+  p.vy+=1170*dt;
+  const nextTop=p.y+p.vy*dt;
+  p.ground=false;
+  let collision=p.vy>=0?Infinity:-Infinity;
+  for(const floor of route){
+    if(p.x+p.w<=floor.x||p.x>=floor.x+floor.w)continue;
+    if(p.vy>=0){
+      if(oldBottom<=floor.y+3&&nextTop+p.h>=floor.y)collision=Math.min(collision,floor.y);
+    }else{
+      const underside=floor.y+(floor.depth??22);
+      if(oldTop>=underside&&nextTop<=underside)collision=Math.max(collision,underside);
+    }
+  }
+  if(Number.isFinite(collision)){
+    p.ground=p.vy>=0;
+    p.y=p.ground?collision-p.h:collision;
+    p.vy=0;
+  }else p.y=nextTop;
+}
+function bridgeStepAt(x){
+  return caveBridge.find(step=>x>=step.x&&x<step.x+step.w);
+}
 function moveOnPlatforms(route,dt,limit=Infinity){
   const p=player;
-    const oldBottom=p.y+p.h;
-    const onGround=p.ground;
-    p.x=Math.max(0,Math.min(Math.min(limit,route.at(-1).x+route.at(-1).w-24),p.x+p.vx*dt));
-    p.vy+=1170*dt;
-    p.y+=p.vy*dt;
-    p.ground=false;
-    for(const floor of route){
-      if(p.x+p.w>floor.x&&p.x<floor.x+floor.w&&oldBottom<=floor.y+3&&p.y+p.h>=floor.y&&p.vy>=0){
-        p.y=floor.y-p.h;
-        p.vy=0;
-        p.ground=true;
-        break;
-      }
+  const onGround=p.ground;
+  const oldX=p.x;
+  p.x=Math.max(0,Math.min(Math.min(limit,route.at(-1).x+route.at(-1).w-24),p.x+p.vx*dt));
+  const arch=route===mountainBridgeRoute;
+  if(arch&&onGround&&p.y+p.h!==454){
+    const nextStep=bridgeStepAt(p.x+12);
+    const oldStep=bridgeStepAt(oldX+12);
+    if(nextStep&&Math.abs(nextStep.y-(p.y+p.h))<=11){
+      p.y=nextStep.y-p.h;
+    }else if(oldStep&&!nextStep&&Math.abs(434-(p.y+p.h))<=11){
+      p.y=434-p.h;
     }
-    if(p.ground&&p.vx&&t>=stepAt){stepAt=t+.26;footstep();}
-    if(!onGround&&p.ground)footstep(true);
-    applyJumpRequest();
+  }
+  const collisionRoute=arch?route.filter(floor=>!floor.bridge||(
+    p.ground&&p.y+p.h!==454
+      ? floor===bridgeStepAt(p.x+12)
+      : true
+  )):route;
+  resolvePlayerVertical(collisionRoute,dt);
+  if(p.ground&&p.vx&&t>=stepAt){stepAt=t+.26;footstep();}
+  if(!onGround&&p.ground)footstep(true);
+  applyJumpRequest();
 }
 function finishChapterTwo(){
   $('practiceNext').hidden=true;
@@ -866,6 +976,7 @@ function drawChapterTwo(){
       for(let i=0;i<4;i++)rect(x+18+i*23,floor.y+20,5,5,'#d6af70');
     }
     for(let i=8;i<floor.w;i+=24)rect(x+i,floor.y+17+i%13,9,3,'#607451');
+    drawStoneFace(x,floor.y,floor.w,'#c9c99842');
   }
   if(region==='shore'){
     for(const trunk of climbTrees.shore)tree(trunk.x-c,trunk.y,1.1);
@@ -881,11 +992,7 @@ function drawChapterTwo(){
   }else{
     monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx);
   }
-  for(const p of particles){
-    ctx.globalAlpha=Math.min(1,p.life/p.duration*1.7);
-    rect(p.x-c,p.y,p.size,p.size,p.color);
-  }
-  ctx.globalAlpha=1;
+  drawParticles(c);
   if(mode==='play'&&region==='shore'&&player.x>1640){
     ctx.fillStyle='#fff0c5';
     ctx.font='14px sans-serif';
@@ -911,13 +1018,34 @@ function drawTransformation(camera){
       break;
     }
     case 'tiger':{
-      poly([[-17,-8],[-27,-16],[-27,-19],[-23,-19],[-20,-13],[-12,-11]],'#d98b45');
-      rect(-17,-17,33,12,'#d98b45');rect(9,-23,15,16,'#e4a458');
-      rect(10,-26,5,5,'#493a34');rect(19,-26,4,5,'#493a34');
-      for(let i=0;i<3;i++)rect(-12+i*8,-17,3,8,'#564139');
-      rect(15,-19,3,2,'#332e29');rect(18,-12,7,4,'#efd5a0');
-      const stride=vx?Math.round(Math.sin(t*19)*4):0;
-      rect(-14+stride,-7,6,7,'#ad693c');rect(9-stride,-7,6,7,'#ad693c');
+      const stride=vx?Math.round(Math.sin(t*19)*6):0;
+      const tail=Math.sin(t*6)*4;
+      const orange='#d88b43', amber='#f0b467', ink='#4c342e', pale='#f4d8a7';
+      poly([[-28,-13],[-40,-18-tail],[-45,-29-tail],[-43,-33-tail],[-39,-32-tail],
+        [-35,-22-tail],[-25,-18]],orange);
+      rect(-44,-31-tail,5,5,ink);rect(-38,-22-tail,5,4,ink);
+      rect(-21,-12,7,9,'#a96843');rect(16,-12,7,9,'#a96843');
+      poly([[-28,-8],[-27,-21],[-20,-30],[-6,-34],[17,-31],[26,-24],[23,-12],[13,-7],[-10,-7]],ink);
+      poly([[-26,-11],[-25,-21],[-18,-28],[-6,-31],[17,-29],[23,-22],[21,-13],[11,-10]],orange);
+      rect(-16,-29,29,4,amber);rect(-14,-14,28,5,pale);
+      for(const stripe of [-19,-9,2,13]){
+        poly([[stripe,-28],[stripe+5,-29],[stripe+1,-22],[stripe+3,-18],[stripe-2,-21]],ink);
+      }
+      rect(-23+stride,-13,9,11,orange);rect(-24+stride,-4,12,4,pale);
+      rect(13-stride,-13,9,11,orange);rect(12-stride,-4,13,4,pale);
+      rect(16,-38,7,8,ink);rect(28,-38,7,9,ink);
+      rect(18,-36,3,4,'#d98f72');rect(30,-36,3,4,'#d98f72');
+      poly([[13,-31],[21,-34],[34,-33],[39,-25],[38,-14],[31,-9],[18,-12],[13,-20]],ink);
+      poly([[16,-30],[22,-32],[32,-31],[36,-25],[36,-17],[29,-12],[20,-15],[16,-22]],amber);
+      rect(17,-26,7,3,ink);rect(28,-28,7,3,ink);
+      rect(25,-24,4,3,'#fff1a2');rect(27,-24,2,3,ink);
+      rect(29,-20,9,7,pale);rect(36,-19,4,3,ink);rect(32,-15,7,2,ink);
+      rect(34,-15,2,2,'#fff4d3');
+      if(vx){
+        ctx.globalAlpha=.45;
+        rect(-48,-14,9,2,'#f0bc75');rect(-55,-8,12,2,'#e6ab62');
+        ctx.globalAlpha=1;
+      }
       break;
     }
     case 'squirrel':{
@@ -967,6 +1095,10 @@ const thirdRoutes={
     {x:794,y:427,w:205},{x:1040,y:390,w:178},{x:1260,y:430,w:590}
   ]
 };
+const caveBridge=Array.from({length:25},(_,i)=>({
+  x:981+i*10,y:Math.round(434-Math.sin(i*Math.PI/24)*56),w:10,depth:12,bridge:true
+}));
+const mountainBridgeRoute=[...caveBridge,...thirdRoutes.mountain];
 const royalHalls={
   palace:{door:694,throne:965,floor:373,inside:[{x:640,y:430,w:1212}],name:'水晶宫'},
   underworld:{door:1355,throne:1640,floor:430,inside:[{x:1300,y:430,w:550}],name:'森罗殿'}
@@ -1170,7 +1302,7 @@ function openThirdRoute(){
   $('counts').textContent=hasStaff?'如意金箍棒':'';
   refreshHealth();
   const quest=thirdScene==='mountain'
-    ? returnedFromUnderworld?'从桥边走回猴群，告诉它们幽冥的事':trained?'走到水帘洞拱桥下的小河，潜入东海':'找到猴群，带它们操练兵器'
+    ? returnedFromUnderworld?'从桥边走回猴群，告诉它们幽冥的事':trained?'走上小拱桥，按 E 下到河边，再潜入东海':'找到猴群，带它们操练兵器'
     : thirdScene==='palace'
       ? hasStaff?(hallEntered?'往左走，按 E 离开水晶宫':'击退宫外的虾兵蟹将，返回花果山'):dragonSpoken?'前往海藏，取定海神针':'走近龙王的宝座'
       : namesCleared?(hallEntered?'往左走，按 E 离开森罗殿':'原路返回幽冥入口，回花果山'):'穿过幽冥，去阎王宝座前';
@@ -1203,7 +1335,8 @@ function meetDragon(){
   chapterTwoDialogue([
     ['东海龙王','上仙到水晶宫来，有何贵干？'],
     ['孙悟空','我来借一件称手的兵器。你先前拿来的刀枪画戟，分量都太轻。'],
-    ['东海龙王','海藏里有一根定海神铁。你沿殿向右走，若能拿得动，便试试它。']
+    ['东海龙王','海藏里有一根定海神铁。你沿殿向右走，若能拿得动，便试试它。'],
+    {q:'龙王让悟空去海藏试什么？',a:['定海神铁','一把宝剑','一面宝镜'],right:0,why:'普通兵器太轻，龙王便指点悟空去试定海神铁。'}
   ],()=>{dragonSpoken=true;checkpoint=850;openThirdRoute();});
 }
 function interactChapterThree(){
@@ -1228,6 +1361,10 @@ function interactChapterThree(){
     }else if(!returnedFromUnderworld&&trained&&player.x>=1010&&player.x<=1192&&player.ground&&player.y+player.h===454){
       switchThirdScene('palace');
       openThirdRoute();
+    }else if(trained&&standingAboveRiver()){
+      player.y=454-player.h;
+      player.vy=0;
+      toast('来到桥下。再按 E 潜入东海。');
     }else toast($('questTitle').textContent);
     return;
   }
@@ -1289,7 +1426,8 @@ function meetUnderworldKing(){
   chirp(98,59,.65,0,.085,'triangle');
     chapterTwoDialogue([
       ['阎王','你既有长生之法，且待我查一查名册。'],
-      ['孙悟空','把生死簿拿来。我自己翻。']
+      ['孙悟空','把生死簿拿来。我自己翻。'],
+      {q:'悟空要翻开哪一册来查名字？',a:['功德簿','生死簿','兵器谱'],right:1,why:'生死簿记载姓名与寿数，悟空想亲自查阅。'}
     ],openDeathBook);
 }
 function openDeathBook(){
@@ -1370,7 +1508,7 @@ function hitEnemy(demon,damage){
   demon.dir=Math.sign(player.x+12-demon.x)||demon.dir;
   demon.strikeAt=0;
   demon.readyAt=t+.34;
-  scatter(demon.x,demon.y-18,15+combo*4,['#f6c575','#fcdfae','#aa6975'],85);
+  scatter(demon.x,demon.y-18,damage>=30?48:20+combo*5,['#f6c575','#fcdfae','#aa6975'],85);
   noiseHit(.17,.32,1300,85);
   chirp(120,56,.13,0,.13,'triangle');
 }
@@ -1488,7 +1626,7 @@ function awaitingHallEntry(){
   return !hallEntered&&(thirdScene==='palace'?!hasStaff:thirdScene==='underworld'&&!namesCleared);
 }
 function currentThirdRoute(){
-  return hallEntered?royalHalls[thirdScene].inside:thirdRoutes[thirdScene];
+  return hallEntered?royalHalls[thirdScene].inside:thirdScene==='mountain'?mountainBridgeRoute:thirdRoutes[thirdScene];
 }
 function atRoyalDoor(hall){
   return player.ground&&Math.abs(player.x+player.w-hall.door)<=47;
@@ -1601,7 +1739,8 @@ function drawChapterThree(){
   }
   const hall=royalHalls[thirdScene];
   if(hall)drawRoyalHall(hall,c,sea);
-  for(const floor of currentThirdRoute()){
+  const floorRoute=mountainScene?thirdRoutes.mountain:currentThirdRoute();
+  for(const floor of floorRoute){
     const x=floor.x-c;
     const river=mountainScene&&floor.y===454;
     if(river){
@@ -1624,6 +1763,7 @@ function drawChapterThree(){
     rect(x,floor.y,floor.w,110,mountainScene?'#354c3e':sea?'#294955':'#352735');
     rect(x,floor.y,floor.w,7,mountainScene?'#8b9a72':sea?'#77aaa1':'#a5726c');
     for(let i=12;i<floor.w;i+=26)rect(x+i,floor.y+17+i%14,11,4,mountainScene?'#617359':sea?'#48707a':'#604552');
+    drawStoneFace(x,floor.y,floor.w,sea?'#a3d7c44c':'#cfa48944');
   }
   if(mountainScene){
     for(const trunk of climbTrees.mountain)tree(trunk.x-c,trunk.y,1.1);
@@ -1685,15 +1825,12 @@ function drawChapterThree(){
     }
     ctx.globalAlpha=1;
   }
-  for(const p of particles){
-    ctx.globalAlpha=Math.min(1,p.life/p.duration*1.7);
-    rect(p.x-c,p.y,p.size,p.size,p.color);
-  }
-  ctx.globalAlpha=1;
+  drawParticles(c);
   let label='';
   if(mountainScene){
     if(returnedFromUnderworld&&player.x>=235&&player.x<=490)label='与猴群交谈';
     if(!returnedFromUnderworld&&!trained&&player.x>=235&&player.x<=490)label='操练猴群';
+    if(!returnedFromUnderworld&&trained&&standingAboveRiver())label='下到桥底';
     if(!returnedFromUnderworld&&trained&&player.x>=1010&&player.x<=1192&&player.ground&&player.y+player.h===454)label='潜入小河';
   }else if(awaitingHallEntry()){
     if(atRoyalDoor(hall))label='进入'+hall.name;
@@ -1712,17 +1849,19 @@ function drawChapterThree(){
     ctx.fillText('[ E ] '+label,Math.max(12,Math.min(810,player.x-c-25)),295);
   }
 }
+function standingAboveRiver(){
+  const step=bridgeStepAt(player.x+12);
+  return player.ground&&player.x>=1040&&player.x<=1160&&step&&Math.abs(player.y+player.h-step.y)<=6;
+}
 function drawCaveBridge(camera){
-  const left=981-camera;
-  for(let i=0;i<25;i++){
-    const offset=i*10;
-    const rise=Math.sin(i*Math.PI/24);
-    const y=Math.round(434-rise*56);
-    rect(left+offset,y,11,12,'#87917a');
-    rect(left+offset,y,11,3,'#c2c4a5');
-    rect(left+offset,y+10,11,2,'#596c5e');
-    rect(left+offset,y-16,11,3,'#85967f');
-    if(i%3===0)rect(left+offset+4,y-16,3,17,'#a5ae8f');
+  const left=caveBridge[0].x-camera;
+  for(const [i,step] of caveBridge.entries()){
+    const x=step.x-camera,y=step.y;
+    rect(x,y,11,step.depth,'#87917a');
+    rect(x,y,11,3,'#c2c4a5');
+    rect(x,y+10,11,2,'#596c5e');
+    rect(x,y-16,11,3,'#85967f');
+    if(i%3===0)rect(x+4,y-16,3,17,'#a5ae8f');
   }
   rect(left,424,19,14,'#657761');
   rect(left+231,424,19,14,'#657761');
