@@ -1612,7 +1612,7 @@ function interactChapterThree(){
     }
     if(!trained&&player.x>=235&&player.x<=490){
       chapterTwoDialogue([
-        ['猴群','列阵！举刀！换长枪！'],
+        ['猴群','列阵！举刀！挺枪！出剑！'],
         ['孙悟空','这些凡间兵器给孩儿们练手还行，我一用力就觉得太轻，根本不趁手。'],
         ['老猴','洞中小拱桥下的河水通着东海。大王何不去龙宫求一件宝物？']
       ],()=>{trained=true;openThirdRoute();});
@@ -2032,10 +2032,10 @@ function drawChapterThree(){
     for(const trunk of climbTrees.mountain)tree(trunk.x-c,trunk.y,1.1);
     for(let i=0;i<4;i++){
       const x=263+i*43-c;
-      monkey(x,402,i%2?-1:1,trained,.8);
-      const angle=trained?Math.sin(t*8+i):.4;
-      ctx.save();ctx.translate(x+9,415);ctx.rotate(angle);
-      rect(0,-22,3,24,'#dac19a');ctx.restore();
+      const face=i%2?-1:1;
+      monkey(x,402,face,trained,.8);
+      const angle=trained?.36+Math.sin(t*8+i)*.57:.28;
+      drawTrainingWeapon(x+face*7,423,face,angle,i%3);
     }
   }else if(hallEntered&&sea){
     drawRoyalAudience(hall,c,true);
@@ -2116,6 +2116,35 @@ function standingAboveRiver(){
   const step=bridgeStepAt(player.x+12);
   return player.ground&&player.x>=1040&&player.x<=1160&&step&&Math.abs(player.y+player.h-step.y)<=6;
 }
+function drawTrainingWeapon(x,y,face,angle,kind){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.scale(face,1);
+  ctx.rotate(angle);
+  const edge='#e1e5ce', steel='#a4b5b2', dark='#33434a', gold='#d8aa69';
+  rect(-1.5,-5,3,11,'#503631');
+  rect(-1.5,4,3,2,gold);
+  if(kind===1){
+    rect(-1.5,-29,3,37,'#6e4834');
+    rect(.5,-29,1,36,'#a97850');
+    poly([[-4,-28],[-3,-33],[0,-41],[3,-33],[4,-28],[0,-25]],dark);
+    poly([[-2,-29],[0,-38],[2,-30],[0,-27]],edge);
+    rect(-2.5,-27,5,2,gold);
+  }else if(kind===0){
+    poly([[-2,-6],[-3,-18],[0,-26],[5,-31],[7,-25],[6,-18],[2,-6]],dark);
+    poly([[-1,-8],[-2,-18],[1,-25],[5,-28],[5,-20],[1,-8]],steel);
+    poly([[0,-9],[2,-20],[5,-28],[5,-21],[2,-12]],edge);
+    rect(-4,-7,8,2,gold);
+  }else{
+    poly([[-3,-6],[-3,-24],[0,-32],[3,-24],[3,-6]],dark);
+    poly([[-2,-8],[-2,-24],[0,-29],[2,-24],[2,-8]],steel);
+    rect(0,-24,1,16,edge);
+    rect(-5,-7,10,2,gold);
+  }
+  rect(-2,0,4,3,'#bd8c59');
+  ctx.restore();
+}
+
 function drawCaveBridge(camera){
   const left=caveBridge[0].x-camera;
   for(const [i,step] of caveBridge.entries()){
