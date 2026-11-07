@@ -28,3 +28,7 @@
 #healthMeter,#energyMeter{width:65px}
 @media(pointer:coarse){#stamina{bottom:69px}#touch button{width:clamp(31px,8vw,49px)}#touch>div{gap:5px}}
 @media(max-width:700px){.vital{font-size:10px;gap:4px}#health,#energy{top:38px}#healthMeter,#energyMeter,#staminaMeter{width:42px}}
+
+#practiceNext{position:absolute;top:48px;left:50%;transform:translateX(-50%);z-index:4;padding:7px 14px;border:1px solid #e5b97b;border-radius:4px;background:#e7bf83;color:#203b31;font-weight:700;font-size:13px}
+#practiceNext:hover{background:#f7d9a1}
+@media(max-width:700px){#practiceNext{top:38px;font-size:11px;padding:5px 9px}}

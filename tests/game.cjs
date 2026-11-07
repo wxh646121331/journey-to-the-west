@@ -83,7 +83,11 @@ const beforeY=player.y;keys.add('ArrowUp');update(1/60);keys.clear();
 if(player.y>=beforeY||Math.abs(transformedUntil-t-10)>.001)throw Error('Crane flight controls or duration');
 t+=10.1;update(1/60);if(mode!=='end')throw Error('Chapter two ending');
 
-startChapterThree();advance();advance();advance();
+$('freeSecond').onclick();
+if(mode!=='play'||$('practiceNext').hidden)throw Error('Practice must provide next chapter access');
+$('practiceNext').onclick();
+if(!$('practiceNext').hidden)throw Error('Practice button must leave with chapter two');
+advance();advance();advance();
 if(chapter!==3||mode!=='play'||thirdScene!=='mountain')throw Error('Third chapter opening');
 for(const route of Object.values(thirdRoutes)){
   for(let i=0;i<route.length-1;i++){
