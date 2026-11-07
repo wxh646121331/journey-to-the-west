@@ -62,5 +62,33 @@ const beforeY=player.y;keys.add('ArrowUp');update(1/60);keys.clear();
 if(player.y>=beforeY||Math.abs(transformedUntil-t-10)>.001)throw Error('Crane flight controls or duration');
 t+=10.1;update(1/60);if(mode!=='end')throw Error('Chapter two ending');
 
+startChapterThree();advance();advance();advance();
+if(chapter!==3||mode!=='play'||thirdScene!=='palace')throw Error('Third chapter opening');
+for(const route of Object.values(thirdRoutes)){
+  for(let i=0;i<route.length-1;i++){
+    const a=route[i],b=route[i+1];
+    Object.assign(player,{x:a.x+a.w-24,y:a.y-34,vy:0,vx:205,ground:true});
+    jump();
+    let landed=false;
+    for(let j=0;j<140;j++){
+      if(player.x>=b.x+b.w/2-12)player.vx=0;
+      moveOnPlatforms(route,1/120);
+      if(player.ground&&player.x>=b.x&&player.x<b.x+b.w&&player.y+34===b.y){landed=true;break;}
+    }
+    if(!landed)throw Error('Chapter three platform gap '+i);
+  }
+}
+player.x=1470;interact();advance();advance();advance();
+if(!hasStaff||mode!=='play')throw Error('Obtaining the staff');
+interact();advance();advance();advance();
+if(thirdScene!=='underworld'||gateOpen)throw Error('Entering the underworld');
+player.x=930;keys.add('ArrowRight');update(1/60);keys.clear();
+if(player.x>930)throw Error('Closed underworld gate');
+interact();if(!gateOpen)throw Error('Staff gate interaction');
+player.x=1490;interact();advance();advance();
+if(!namesCleared)throw Error('Crossing names off the book');
+player.x=1770;interact();advance();
+if(mode!=='end')throw Error('Third chapter ending');
+
 `,context);
 console.log('PASS: story, incorrect/correct answers, birth, physics, all platforms in both directions, challenge, discovery, return and ending.');
