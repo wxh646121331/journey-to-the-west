@@ -259,6 +259,55 @@ if(climbingTree!==trunk||player.y>=trunk.y-34)throw Error('Squirrel climbs the t
 clearTransformation();
 player.x=320;interact();advance();advance();advance();
 if(mode!=='end')throw Error('Third chapter ending');
+$('nextFourth').onclick();
+if(chapter!==4||mode!=='talk'||!hasStaff||!player.ground)throw Error('Fourth chapter opening');
+for(let i=0;i<4;i++)advance();
+if(mode!=='play'||fourthScene!=='clouds')throw Error('Heaven invitation');
+for(const scene of ['clouds','escape']){
+  fourthScene=scene;
+  const route=fourthRoutes[scene];
+  for(let i=0;i<route.length-1;i++){
+    const from=route[i], to=route[i+1];
+    placePlayerOnGround(route,from.x+from.w-24);
+    keys.add('ArrowRight');jump();
+    let landed=false;
+    for(let tick=0;tick<130;tick++){
+      if(player.x>=to.x+to.w/2-12)keys.clear();
+      t+=1/120;
+      moveStaffPlayer(route,1/120);
+      if(player.ground&&player.x>=to.x&&player.x<to.x+to.w&&player.y+34===to.y){landed=true;break;}
+    }
+    keys.clear();
+    if(!landed)throw Error('Unreachable chapter four gap '+scene+' '+i);
+  }
+}
+fourthScene='clouds';
+placePlayerOnGround(fourthRoutes.clouds,1572);interact();advance();advance();
+if(mode!=='play'||fourthScene!=='stable')throw Error('Imperial stable entry');
+placePlayerOnGround(fourthRoutes.stable,917);interact();
+if(mode!=='play')throw Error('Cannot skip caring for the horses');
+for(const horse of heavenlyHorses){placePlayerOnGround(fourthRoutes.stable,horse.x-12);interact();interact();}
+if(fedHorses.size!==3)throw Error('Each horse only counts once');
+placePlayerOnGround(fourthRoutes.stable,917);interact();
+for(let i=0;i<4;i++)advance();
+if(mode!=='play'||fourthScene!=='escape')throw Error('Discover the rank and start escape');
+placePlayerOnGround(fourthRoutes.escape,1613);interact();
+if(mode!=='play')throw Error('Cannot leave South Heaven Gate with defenders undefeated');
+for(const guard of heavenGuards){
+  placePlayerOnGround(fourthRoutes.escape,guard.x-60);
+  player.face=1;
+  t+=1.1;swingStaff();
+  if(guard.hp!==guard.maxHp-7)throw Error('Fourth chapter staff damage');
+  while(guard.hp>0){t+=1.1;swingStaff();}
+}
+placePlayerOnGround(fourthRoutes.escape,1613);interact();advance();
+if(mode!=='play'||fourthScene!=='cave'||!player.ground)throw Error('Return from the South Heaven Gate');
+placePlayerOnGround(fourthRoutes.cave,643);interact();
+for(let i=0;i<4;i++)advance();
+if(mode!=='end'||!fourthComplete)throw Error('Crowned Great Sage in the Water Curtain Cave');
+startChapterFour({phase:'escape',checkpoint:608,defeated:['keeper'],energy:5});
+if(!player.ground||player.x!==608||heavenGuards[0].hp!==0||fourthScene!=='escape')throw Error('Resume fourth chapter combat checkpoint');
+
 
 `,context);
-console.log('PASS: story, incorrect/correct answers, birth, physics, all platforms in both directions, challenge, discovery, return and ending.');
+console.log('PASS: story, incorrect/correct answers, birth, physics, all platforms in both directions, challenge, discovery, return and chapter four.');
