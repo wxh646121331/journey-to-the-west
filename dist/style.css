@@ -6,3 +6,8 @@
 @keyframes new-quest{0%,32%{transform:translate(var(--quest-x),var(--quest-y)) scale(1.25);opacity:1}100%{transform:none}}
 #quest.arrival{animation:new-quest 2s ease-in-out}
 @media(pointer:coarse){#quest{bottom:69px;right:12px}}@media(prefers-reduced-motion:reduce){#quest.arrival{animation:none}}
+
+#energy{background:#163b36e8;border:1px solid #a89b64;padding:6px 9px;color:#fff1bb;white-space:nowrap}
+#energyMeter{width:72px;vertical-align:middle;accent-color:#d8af60}
+#ending .primary+.subtle{margin-top:7px}
+@media(max-width:700px){#energyMeter{width:42px}#energy{padding:4px 5px}}

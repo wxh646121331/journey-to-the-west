@@ -22,5 +22,35 @@ player.x=3350;interact();if(mode!=='play')throw Error('Cannot finish before monk
 player.y=398;player.vy=0;
 for(let i=0;i<480;i++)update(1/60);
 interact();if(mode!=='quiz'||!activeQuiz.final)throw Error('Throne objective');answer(2);advance();if(mode!=='talk')throw Error('Coronation dialogue');advance();if(mode!=='coronation')throw Error('Throne scene');for(let i=0;i<240;i++){t+=1/60;update(1/60);}if(mode!=='end'||seatedAt===null)throw Error('Seated ending');
+startChapterTwo();
+for(let i=0;i<6;i++)advance();
+if(chapter!==2||region!=='cave'||mode!=='play')throw Error('Second chapter opening');
+for(const route of Object.values(secondRoutes)){
+  for(let i=0;i<route.length-1;i++){
+    const a=route[i],b=route[i+1];
+    region=route===secondRoutes.cave?'cave':'shore';
+    Object.assign(player,{x:a.x+a.w-24,y:a.y-34,vy:0,ground:true});
+    keys.clear();keys.add('ArrowRight');jump();
+    let landed=false;
+    for(let j=0;j<130;j++){
+      if(player.x>=b.x+b.w/2-12)keys.clear();
+      update(1/120);
+      if(player.ground&&player.x>=b.x&&player.x<b.x+b.w&&player.y+34===b.y){landed=true;break;}
+    }
+    if(!landed)throw Error('Chapter two platform gap '+region+' '+i);
+  }
+}
+keys.clear();region='cave';
+Object.assign(player,{x:1610,y:398,vy:0,ground:true});
+for(let i=0;i<85;i++)update(1/60);
+if(mode!=='voyage')throw Error('Boat boarding');
+update(4);advance();advance();
+if(region!=='shore'||mode!=='play')throw Error('Voyage arrival');
+player.x=1610;interact();advance();advance();advance();
+if(!learned||mode!=='play')throw Error('Apprenticeship');
+energy=1;castTransform();if(energy!==1||transformedUntil)throw Error('Insufficient energy');
+energy=10;castTransform();if(energy!==8||!transformedUntil)throw Error('Spell cost');
+t+=3;update(1/60);if(mode!=='end')throw Error('Chapter two ending');
+
 `,context);
 console.log('PASS: story, incorrect/correct answers, birth, physics, all platforms in both directions, challenge, discovery, return and ending.');

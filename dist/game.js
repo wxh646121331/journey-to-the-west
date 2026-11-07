@@ -17,7 +17,7 @@ function tone(f=440,d=.12){if(muted)return;try{audio??=new (window.AudioContext|
 function toast(s){$('toast').textContent=s;toastUntil=t+3.5;}
 function setSteps(n){for(let i=0;i<3;i++)$('step'+i).classList.toggle('active',i<=n);}
 function save(){if(mode!=='play')return;try{localStorage.setItem(SAVE,JSON.stringify({x:checkpoint,score,taken:peaches.map(p=>p.taken),found,challenged,escort}));}catch{}}
-function reset(){seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
+function reset(){chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false){activeQuiz={...q,final};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
@@ -58,6 +58,7 @@ function talk(title,text,next){
 }
 function interact(){
   if(mode!=='play'||paused)return;
+  if(chapter===2){interactChapterTwo();return;}
   if(player.x>1780&&player.x<2070&&!escort){
     if(!found){
       talk('猴群 · 瀑布前的约定','谁能穿过瀑布，探明水源，再平安回来，我们就拜他为王！',()=>{
@@ -116,18 +117,19 @@ function updateCoronation(dt){
   }
   if(t-seatedAt>2.25)finish();
 }
-function finish(){$('quest').hidden=true;mode='end';ending=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('pause').hidden=true;setSteps(2);const n=peaches.filter(p=>p.taken).length;$('ending').hidden=false;$('ending').innerHTML=`<span class="eyebrow">CHAPTER COMPLETE</span><h2>美 猴 王</h2><div class="cn-title">第一关 · 石破天惊，圆满完成</div><p>你为猴群寻得洞天，也赢得了他们的信任。</p><div class="stats"><div><strong>${n} / 12</strong><span>林间仙桃</span></div><div><strong>${score} / 3</strong><span>山海问答</span></div><div><strong>已发现</strong><span>水帘洞天</span></div></div><button class="primary" id="again">再游花果山 ↻</button><p>下一段旅程 · 漂洋过海，访道求仙（待续）</p>`;$('again').onclick=start;$('status').textContent='第一关完成 · 美猴王诞生';$('hint').textContent='第一段旅程已完成，感谢你走进花果山。';try{localStorage.removeItem(SAVE);}catch{}tone(523,.3);setTimeout(()=>tone(784,.5),220);}
+function finish(){$('quest').hidden=true;mode='end';ending=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('pause').hidden=true;setSteps(2);const n=peaches.filter(p=>p.taken).length;$('ending').hidden=false;$('ending').innerHTML=`<span class="eyebrow">CHAPTER COMPLETE</span><h2>美 猴 王</h2><div class="cn-title">第一关 · 石破天惊，圆满完成</div><p>你为猴群寻得洞天，也赢得了他们的信任。</p><div class="stats"><div><strong>${n} / 12</strong><span>林间仙桃</span></div><div><strong>${score} / 3</strong><span>山海问答</span></div><div><strong>已发现</strong><span>水帘洞天</span></div></div><button class="primary" id="nextChapter">第二关 · 漂洋寻仙 →</button><button class="subtle" id="again">再游花果山 ↻</button>`;$('again').onclick=start;$('nextChapter').onclick=()=>startChapterTwo();$('status').textContent='第一关完成 · 美猴王诞生';$('hint').textContent='第一段旅程已完成，感谢你走进花果山。';try{localStorage.setItem(SAVE,JSON.stringify({chapter:2,phase:'cave'}));}catch{}tone(523,.3);setTimeout(()=>tone(784,.5),220);}
 function pause(){if(['cover','end'].includes(mode))return;paused=!paused;keys.clear();$('pausePanel').hidden=!paused;}
 $('start').onclick=start;$('restart').onclick=start;$('resume').onclick=pause;$('pause').onclick=pause;$('sound').onclick=()=>{muted=!muted;$('sound').textContent='♫ 声音：'+(muted?'关':'开');tone(523);};
 try{if(localStorage.getItem(SAVE))$('continue').hidden=false;}catch{}
-$('continue').onclick=()=>{try{const s=JSON.parse(localStorage.getItem(SAVE));reset();score=s.score||0;challenged=!!s.challenged;found=!!s.found;escort=!!s.escort;checkpoint=s.x||90;player.x=checkpoint;player.y=270;peaches.forEach((p,i)=>p.taken=!!s.taken?.[i]);$('cover').hidden=true;$('pause').hidden=false;tone(392);beginPlay();if(found)setSteps(2);}catch{start();}};
+$('continue').onclick=()=>{try{const s=JSON.parse(localStorage.getItem(SAVE));if(s?.chapter===2){startChapterTwo(s);return;}reset();score=s.score||0;challenged=!!s.challenged;found=!!s.found;escort=!!s.escort;checkpoint=s.x||90;player.x=checkpoint;player.y=270;peaches.forEach((p,i)=>p.taken=!!s.taken?.[i]);$('cover').hidden=true;$('pause').hidden=false;tone(392);beginPlay();if(found)setSteps(2);}catch{start();}};
 $('stage').addEventListener('click',e=>{if(e.target.closest('button'))return;advance();});
-window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Escape'){pause();return;}if(paused)return;if(e.code==='Space'&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW')jump();if(e.code==='KeyE')interact();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end'].includes(mode))pause();});
-document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
+window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Escape'){pause();return;}if(paused)return;if(e.code==='Space'&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW')jump();if(e.code==='KeyE')interact();if(e.code==='KeyF')castTransform();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end'].includes(mode))pause();});
+document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();if(b.dataset.key==='KeyF')castTransform();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
 function jump(){if(mode==='play'&&!paused&&player.ground){scatter(player.x+12,player.y+34,12,['#d5bf8c','#81975d']);player.vy=-510;player.ground=false;noiseHit(.17,.12,850,220);}}
 function update(dt){updateAmbience();
 if(paused)return;
 updateParticles(dt);
+if(chapter===2){updateChapterTwo(dt);return;}
 if(mode==='coronation'){updateCoronation(dt);return;}
 if(mode==='burst'){
   if(burst<1.5&&burst+dt>=1.5){
@@ -368,4 +370,311 @@ function drawEffects(){
   }
   ctx.globalAlpha=1;
 }
-function frame(now){const dt=Math.min(.032,(now-last)/1000||.016);last=now;if(!paused)t+=dt;update(dt);ctx.setTransform(PIXEL_SCALE,0,0,PIXEL_SCALE,0,0);ctx.imageSmoothingEnabled=false;if(['cover','story','burst'].includes(mode)||(mode==='quiz'&&!activeQuiz?.final))drawCover();else drawWorld();drawEffects();if(t>toastUntil)$('toast').textContent='';requestAnimationFrame(frame);}requestAnimationFrame(frame);
+function frame(now){const dt=Math.min(.032,(now-last)/1000||.016);last=now;if(!paused)t+=dt;update(dt);ctx.setTransform(PIXEL_SCALE,0,0,PIXEL_SCALE,0,0);ctx.imageSmoothingEnabled=false;if(['cover','story','burst'].includes(mode)||(mode==='quiz'&&!activeQuiz?.final))drawCover();else if(chapter===2)drawChapterTwo();else drawWorld();if(chapter===1)drawEffects();if(t>toastUntil)$('toast').textContent='';requestAnimationFrame(frame);}requestAnimationFrame(frame);
+
+let chapter=1, region='cave', energy=0, learned=false, transformedUntil=0, voyageTime=0, dockWait=0;
+const secondRoutes={
+  cave:[
+    {x:-70,y:432,w:690},{x:650,y:425,w:145},{x:835,y:389,w:140},
+    {x:1015,y:422,w:150},{x:1205,y:385,w:135},{x:1380,y:432,w:410}
+  ],
+  shore:[
+    {x:-80,y:442,w:450},{x:415,y:411,w:145},{x:601,y:379,w:150},
+    {x:791,y:415,w:164},{x:998,y:386,w:140},{x:1184,y:427,w:160},
+    {x:1380,y:400,w:490}
+  ]
+};
+const secondPeaches={
+  cave:[[300,394],[704,389],[888,351],[1070,385],[1259,349],[1470,394]],
+  shore:[[221,402],[475,375],[667,341],[850,375],[1061,350],[1250,390],[1450,363],[1660,363]]
+};
+let collected=new Set();
+let secondDialogueLine=0;
+
+function chapterTwoSave(){
+  try{
+    localStorage.setItem(SAVE,JSON.stringify({
+      chapter:2,phase:region,energy,learned,peaches:[...collected],checkpoint
+    }));
+  }catch{}
+}
+function chapterTwoQuest(title){
+  const card=$('quest');
+  card.hidden=false;
+  $('questTitle').textContent=title;
+  card.classList.remove('arrival');
+  const stage=$('stage');
+  if(stage.clientWidth){
+    card.style.setProperty('--quest-x',(stage.clientWidth/2-card.offsetLeft-card.offsetWidth/2)+'px');
+    card.style.setProperty('--quest-y',(stage.clientHeight/2-card.offsetTop-card.offsetHeight/2)+'px');
+    void card.offsetWidth;
+    card.classList.add('arrival');
+  }
+  $('status').textContent=title;
+}
+function chapterTwoDialogue(lines,done){
+  let index=0;
+  function next(){
+    if(index===lines.length){done();return;}
+    secondDialogueLine=index;
+    const [speaker,line]=lines[index++];
+    talk(speaker,line,next);
+  }
+  next();
+}
+function startChapterTwo(saved){
+  reset();
+  chapter=2;
+  region=saved?.phase==='shore'?'shore':'cave';
+  energy=Math.max(0,Math.min(10,saved?.energy||0));
+  learned=region==='shore'&&!!saved?.learned;
+  collected=new Set(saved?.peaches||[]);
+  transformedUntil=0;
+  voyageTime=0;
+  dockWait=0;
+  checkpoint=saved?.checkpoint??90;
+  player.x=checkpoint;
+  player.y=320;
+  $('cover').hidden=true;
+  $('pause').hidden=false;
+  $('chapterLabel').textContent='CHAPTER 02 / 漂洋寻仙';
+  $('hud').hidden=false;
+  $('energy').hidden=false;
+  $('spellButton').hidden=!learned;
+  $('area').textContent=region==='shore'?'西牛贺洲 · 登岸':'花果山 · 水帘洞';
+  $('counts').textContent='';
+  $('hint').textContent='仙桃补充元气。学会变化后，可按 F 施法。';
+  renderEnergy();
+  if(region==='shore'){
+    openSecondRoute(learned?'消耗 2 点元气，试一次七十二变':'沿山道寻找菩提祖师');
+    return;
+  }
+  if(saved?.checkpoint){
+    openSecondRoute('从右侧出洞，前往海边的小帆船');
+    return;
+  }
+  chapterTwoDialogue([
+    ['水帘洞 · 一日','美猴王正和群猴玩耍，洞里满是笑声。'],
+    ['水帘洞 · 忽然','一只猴子倒下，再也没有醒来。群猴围拢过来，洞中渐渐安静。'],
+    ['猴群','我们今日虽快乐，可总有一天也会死。想到这里，大家都慌了。'],
+    ['美猴王','可有谁知道，怎样才能不死？'],
+    ['老猴','我听说，神仙和佛能够超脱生死。大王若想求个明白，可以出海去访一访。'],
+    ['美猴王','那我便渡海去寻师，求个长生之法。']
+  ],()=>openSecondRoute('右侧洞门已开。出洞，前往海边的小帆船'));
+}
+function openSecondRoute(quest){
+  mode='play';
+  $('touch').hidden=false;
+  chapterTwoQuest(quest);
+  chapterTwoSave();
+}
+function renderEnergy(){
+  $('energyMeter').value=energy;
+  $('energyValue').textContent=energy+'/10';
+}
+function arriveAcrossSea(){
+  region='shore';
+  checkpoint=90;
+  cam=0;
+  Object.assign(player,{x:90,y:350,vy:0,vx:0,ground:false});
+  chapterTwoSave();
+  chapterTwoDialogue([
+    ['海上','一叶帆船乘风破浪。美猴王漂过南赡部洲，又渡西海，终于来到西牛贺洲。'],
+    ['西牛贺洲','岸边有人指向远山。山中有一处洞府，名为斜月三星洞。']
+  ],()=>openSecondRoute('沿山道寻找菩提祖师'));
+}
+function interactChapterTwo(){
+  if(region!=='shore'||player.x<1580)return;
+  if(learned){toast('按 F 或点击「变化」施法，消耗 2 点元气。');return;}
+  chapterTwoDialogue([
+    ['菩提祖师','你越海寻来，求的是什么？'],
+    ['美猴王','弟子愿拜您为师，学习长生与变化之道。'],
+    ['菩提祖师','好。赐你姓孙，法名悟空。今日先试一试七十二变。']
+  ],()=>{
+    learned=true;
+    checkpoint=1550;
+    $('spellButton').hidden=false;
+    openSecondRoute('拾桃补充元气，按 F 施展七十二变');
+  });
+}
+function castTransform(){
+  if(chapter!==2||mode!=='play'||paused||!learned||t<transformedUntil)return;
+  if(energy<2){toast('元气不足。沿路拾两颗仙桃再来试。');return;}
+  energy-=2;
+  renderEnergy();
+  transformedUntil=t+2.2;
+  player.vy=-160;
+  player.ground=false;
+  scatter(player.x+12,player.y+15,42,['#fff0af','#efb767','#c4e3ac'],115);
+  chirp(370,720,.35,0,.09,'triangle');
+  chapterTwoSave();
+  chapterTwoQuest('七十二变 · 化作飞雀');
+}
+function updateChapterTwo(dt){
+  if(mode==='voyage'){
+    voyageTime+=dt;
+    if(voyageTime>=4)arriveAcrossSea();
+    return;
+  }
+  if(mode!=='play')return;
+  if(transformedUntil&&t>=transformedUntil){
+    transformedUntil=0;
+    finishChapterTwo();
+    return;
+  }
+  const p=player;
+  const route=secondRoutes[region];
+  p.vx=(keys.has('ArrowRight')||keys.has('KeyD')?205:0)-(keys.has('ArrowLeft')||keys.has('KeyA')?205:0);
+  if(p.vx)p.face=Math.sign(p.vx);
+  const oldBottom=p.y+p.h;
+  const onGround=p.ground;
+  p.x=Math.max(0,Math.min(route.at(-1).x+route.at(-1).w-24,p.x+p.vx*dt));
+  p.vy+=(t<transformedUntil?195:1170)*dt;
+  p.y+=p.vy*dt;
+  p.ground=false;
+  for(const floor of route){
+    if(p.x+p.w>floor.x&&p.x<floor.x+floor.w&&oldBottom<=floor.y+3&&p.y+p.h>=floor.y&&p.vy>=0){
+      p.y=floor.y-p.h;
+      p.vy=0;
+      p.ground=true;
+      break;
+    }
+  }
+  if(p.ground&&p.vx&&t>=stepAt){stepAt=t+.26;footstep();}
+  if(!onGround&&p.ground)footstep(true);
+  if(p.y>590){p.x=checkpoint;p.y=305;p.vy=0;toast('回到最近的落脚点。');}
+  if(p.ground&&p.x>1430&&p.x<1510&&checkpoint<1430){checkpoint=1440;chapterTwoSave();}
+  secondPeaches[region].forEach(([x,y],i)=>{
+    const id=region+i;
+    if(collected.has(id)||energy===10||Math.abs(p.x+12-x)>=25||Math.abs(p.y+17-y)>=34)return;
+    collected.add(id);
+    energy++;
+    renderEnergy();
+    scatter(x,y,26,['#ffd39a','#f1a785','#f9edbd'],90);
+    tone(740,.09);
+    chapterTwoSave();
+  });
+  cam+=(Math.max(0,Math.min(1010,p.x-320))-cam)*Math.min(1,dt*7);
+  $('area').textContent=region==='shore'?'西牛贺洲 · 灵台方寸山':p.x<600?'花果山 · 水帘洞':'花果山 · 出海山道';
+  if(region==='cave'&&p.x>1580&&p.ground){
+    dockWait+=dt;
+    if(dockWait<dt*2)chapterTwoQuest('登船准备中，稍候片刻');
+    if(dockWait>=1.25){
+      mode='voyage';
+      $('touch').hidden=true;
+      chapterTwoQuest('渡海寻仙');
+    }
+  }else if(dockWait){
+    dockWait=0;
+    chapterTwoQuest('前往海边的小帆船');
+  }
+}
+function finishChapterTwo(){
+  mode='end';
+  $('quest').hidden=true;
+  $('touch').hidden=true;
+  $('pause').hidden=true;
+  $('ending').hidden=false;
+  $('ending').innerHTML='<span class="eyebrow">CHAPTER COMPLETE</span><h2>孙 悟 空</h2><div class="cn-title">第二关完成 · 拜师学艺</div><p>习得七十二变</p><button class="primary" id="replaySecond">再游第二关 ↻</button><button class="subtle" id="replayFirst">返回第一关</button>';
+  $('replaySecond').onclick=()=>startChapterTwo();
+  $('replayFirst').onclick=start;
+  $('status').textContent='第二关完成 · 习得七十二变';
+  chapterTwoSave();
+}
+function drawSailboat(x,y){
+  poly([[x-57,y],[x+60,y],[x+42,y+17],[x-38,y+17]],'#754b35');
+  rect(x-48,y,98,5,'#c18d59');
+  rect(x-2,y-91,5,94,'#613f30');
+  poly([[x+4,y-86],[x+4,y-11],[x+54,y-15]],'#f2deb0');
+  poly([[x-7,y-66],[x-7,y-12],[x-40,y-16]],'#bb895e');
+}
+function drawChapterTwo(){
+  drawBackground();
+  const sailing=mode==='voyage';
+  const c=sailing?0:cam;
+  rect(0,456,W,84,'#346d68');
+  for(let i=0;i<28;i++){
+    const y=464+i%6*13;
+    rect((i*91+t*19)%1040-40,y,28+i%5*8,2,'#a6cab181');
+  }
+  if(sailing){
+    const x=145+voyageTime*155;
+    const y=451+Math.sin(t*3)*4;
+    drawSailboat(x,y);
+    monkey(x-25,y-35,1,false,.85,true);
+    for(let i=0;i<17;i++)rect(x-63-i*6,y+9+i%3*4,4,1,'#c0e8d0');
+    return;
+  }
+  if(region==='cave'){
+    rect(-c,0,595,110,'#173a34');
+    rect(-c,110,82,322,'#1e483b');
+    for(let i=0;i<8;i++)poly([[i*78-c,100],[i*78+23-c,151+i%3*17],[i*78+51-c,100]],'#173a34');
+    rect(571-c,125,27,239,'#718d70');
+    rect(551-c,113,65,19,'#8ea181');
+    if(mode==='talk'){
+      rect(568-c,235,63,197,'#506b55');
+      rect(573-c,242,6,184,'#71866a');
+      rect(624-c,242,5,184,'#304d40');
+    }else{
+      rect(615-c,350,3,65,'#b6d3a67a');
+    }
+    for(let i=0;i<3;i++){
+      const x=155+i*58-c;
+      if(i===1&&mode==='talk'&&secondDialogueLine>0){
+        ctx.save();
+        ctx.translate(x-15,420);
+        ctx.rotate(-Math.PI/2);
+        monkey(0,0,1,false,.78);
+        ctx.restore();
+      }else{
+        monkey(x,396,i%2?-1:1,mode==='talk'&&i!==1,.78);
+      }
+    }
+    rect(342-c,396,68,9,'#84947a');
+    rect(351-c,405,9,27,'#657960');
+    rect(392-c,405,9,27,'#657960');
+    drawSailboat(1728-c,450+Math.sin(t*3)*2);
+  }else{
+    const shrine=1660-c;
+    rect(shrine-56,269,132,131,'#485a46');
+    poly([[shrine-83,271],[shrine+10,214],[shrine+100,271]],'#244b40');
+    rect(shrine-65,268,152,8,'#a0a477');
+    rect(shrine-18,316,55,84,'#203c33');
+    rect(shrine-23,306,65,11,'#b0a876');
+    rect(shrine+56,283,5,38,'#917d52');
+    rect(shrine+49,310,19,21,'#e5b56b');
+    const master=1617-c;
+    rect(master-8,377,19,23,'#a3a57e');
+    rect(master-6,365,15,13,'#e3cba0');
+    rect(master-8,362,18,5,'#e8d9b2');
+    rect(master,374,7,13,'#dbd3b3');
+  }
+  for(const floor of secondRoutes[region]){
+    const x=floor.x-c;
+    rect(x,floor.y,floor.w,110,'#354d3c');
+    rect(x,floor.y,floor.w,7,'#8c9e6b');
+    for(let i=8;i<floor.w;i+=24)rect(x+i,floor.y+17+i%13,9,3,'#607451');
+  }
+  secondPeaches[region].forEach(([x,y],i)=>{
+    if(!collected.has(region+i))peach(x-c,y);
+  });
+  if(t<transformedUntil){
+    const x=player.x+12-c;
+    const y=player.y+15+Math.sin(t*9)*3;
+    rect(x-9,y,17,8,'#e8c06f');
+    rect(x-5,y-6+Math.sin(t*18)*5,9,10,'#fff1a3');
+    rect(x+6,y-2,7,6,'#b98a48');
+  }else{
+    monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx,1,true);
+  }
+  for(const p of particles){
+    ctx.globalAlpha=Math.min(1,p.life/p.duration*1.7);
+    rect(p.x-c,p.y,p.size,p.size,p.color);
+  }
+  ctx.globalAlpha=1;
+  if(mode==='play'&&region==='shore'&&player.x>1510){
+    ctx.fillStyle='#fff0c5';
+    ctx.font='14px sans-serif';
+    ctx.fillText(learned?'[ F ] 七十二变':'[ E ] 拜见菩提祖师',1550-c,318);
+  }
+}
