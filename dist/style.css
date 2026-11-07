@@ -32,3 +32,17 @@
 #practiceNext{position:absolute;top:48px;left:50%;transform:translateX(-50%);z-index:4;padding:7px 14px;border:1px solid #e5b97b;border-radius:4px;background:#e7bf83;color:#203b31;font-weight:700;font-size:13px}
 #practiceNext:hover{background:#f7d9a1}
 @media(max-width:700px){#practiceNext{top:38px;font-size:11px;padding:5px 9px}}
+
+#pausePanel,#chapterPanel{overflow:auto;padding:12px}
+#pausePanel h2,#chapterPanel h2{margin:8px 0 15px;font-size:clamp(18px,3vw,26px)}
+.pause-actions{display:flex;gap:9px;margin-top:10px}
+.pause-actions button{min-width:92px;padding:8px 12px;color:#f4e8ce;background:#35514b;border:1px solid #869387;border-radius:3px}
+.pause-actions button:hover{background:#48655d}
+#saveResult{min-height:1.3em;margin:7px 0 0;color:#dbceaa;font-size:12px}
+.chapter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:min(88%,430px)}
+.chapter-grid button{display:grid;gap:3px;padding:9px 12px;text-align:left;color:#252a2a;background:#dddede;border:1px solid #fafafa;border-radius:4px}
+.chapter-grid button:not(:disabled):hover{background:#f2f2f2;border-color:#e4ad61}
+.chapter-grid button:disabled{color:#d3d4d4;background:#343839;border-color:#55595a;cursor:default}
+.chapter-grid span,.chapter-grid small{font-size:11px}
+.chapter-grid strong{font-size:clamp(13px,2.5vw,17px)}
+@media(max-width:450px){#pausePanel h2,#chapterPanel h2{margin-bottom:9px}.chapter-grid{gap:6px}.chapter-grid button{padding:5px 8px}.pause-actions button{padding:5px 10px}#pausePanel .subtle,#chapterPanel .subtle{padding:6px}}

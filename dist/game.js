@@ -1,6 +1,46 @@
 'use strict';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const W=960,H=540, PIXEL_SCALE=2, SAVE='west-stone-monkey-v1';
+const PROGRESS=SAVE+'-chapters';
+const CHAPTER_COUNT=4;
+const progress=loadGameProgress();
+
+function loadGameProgress(){
+  const empty={unlocked:1,active:1,slots:{}};
+  try{
+    const saved=JSON.parse(localStorage.getItem(PROGRESS));
+    if(saved?.slots&&Number.isInteger(saved.unlocked))return saved;
+  }catch{}
+  try{
+    const legacy=JSON.parse(localStorage.getItem(SAVE));
+    if(legacy&&typeof legacy==='object'){
+      const n=Math.max(1,Math.min(CHAPTER_COUNT,Number(legacy.chapter)||1));
+      const unlocked=n===2&&legacy.flightTrialDone?3:n;
+      return {unlocked,active:n,slots:{[n]:{...legacy,chapter:n}}};
+    }
+  }catch{}
+  return empty;
+}
+function persistProgress(){
+  $('continue').hidden=!progress.slots[progress.active];
+  try{
+    localStorage.setItem(PROGRESS,JSON.stringify(progress));
+    return true;
+  }catch{return false;}
+}
+function writeGameSave(state){
+  progress.slots[state.chapter]=state;
+  progress.unlocked=Math.max(progress.unlocked,state.chapter);
+  progress.active=state.chapter;
+  return persistProgress();
+}
+function unlockNextChapter(n,initial){
+  progress.unlocked=Math.max(progress.unlocked,n);
+  progress.slots[n]??={chapter:n,...initial};
+  progress.active=n;
+  persistProgress();
+}
+
 const questNames=['寻找猴群并交谈','穿越瀑布，查看洞中石碑','返回瀑布前，再次与猴群交谈','带猴群进入水帘洞，在石王座前集合'];
 const THRONE_X=3375;
 let seatedAt=null;
@@ -17,7 +57,12 @@ const quizzes={3:{q:'花果山位于哪一洲？',a:['东胜神洲','南赡部�
 function tone(f=440,d=.12){if(muted)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+d);}catch{}}
 function toast(s){$('toast').textContent=s;toastUntil=t+3.5;}
 function setSteps(n){for(let i=0;i<3;i++)$('step'+i).classList.toggle('active',i<=n);}
-function save(){if(mode!=='play')return;try{localStorage.setItem(SAVE,JSON.stringify({x:checkpoint,score,taken:peaches.map(p=>p.taken),found,challenged,escort,...vitalSave()}));}catch{}}
+function save(){
+  if(mode!=='play')return false;
+  return writeGameSave({
+    chapter:1,x:checkpoint,score,taken:peaches.map(p=>p.taken),found,challenged,escort,...vitalSave()
+  });
+}
 function placePlayerOnGround(route,x){
   slamActive=false;
   const floor=route.find(p=>x>=p.x&&x+player.w<=p.x+p.w)??route[0];
@@ -25,7 +70,7 @@ function placePlayerOnGround(route,x){
   Object.assign(player,{x:safeX,y:floor.y-player.h,vx:0,vy:0,ground:true});
   jumpRequestedUntil=-1;
 }
-function reset(){$('practiceNext').hidden=true;clearTransformation();slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;effectRings.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
+function reset(){$('practiceNext').hidden=true;clearTransformation();slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;effectRings.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;$('chapterPanel').hidden=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false,next=null){activeQuiz={...q,final,next};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
@@ -128,13 +173,79 @@ function updateCoronation(dt){
   }
   if(t-seatedAt>2.25)finish();
 }
-function finish(){$('health').hidden=true;$('stamina').hidden=true;$('quest').hidden=true;mode='end';ending=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('pause').hidden=true;setSteps(2);const n=peaches.filter(p=>p.taken).length;$('ending').hidden=false;$('ending').innerHTML=`<span class="eyebrow">CHAPTER COMPLETE</span><h2>美 猴 王</h2><div class="cn-title">第一关 · 石破天惊，圆满完成</div><p>你为猴群寻得洞天，也赢得了他们的信任。</p><div class="stats"><div><strong>${n} / 12</strong><span>林间仙桃</span></div><div><strong>${score} / 3</strong><span>山海问答</span></div><div><strong>已发现</strong><span>水帘洞天</span></div></div><button class="primary" id="nextChapter">第二关 · 漂洋寻仙 →</button><button class="subtle" id="again">再游花果山 ↻</button>`;$('again').onclick=start;$('nextChapter').onclick=()=>startChapterTwo();$('status').textContent='第一关完成 · 美猴王诞生';$('hint').textContent='第一段旅程已完成，感谢你走进花果山。';try{localStorage.setItem(SAVE,JSON.stringify({chapter:2,phase:'cave'}));}catch{}tone(523,.3);setTimeout(()=>tone(784,.5),220);}
-function pause(){jumpRequestedUntil=-1;if(['cover','end','gameover'].includes(mode))return;paused=!paused;keys.clear();$('pausePanel').hidden=!paused;}
-$('start').onclick=start;$('restart').onclick=start;$('resume').onclick=pause;$('pause').onclick=pause;$('sound').onclick=()=>{muted=!muted;$('sound').textContent='♫ 声音：'+(muted?'关':'开');tone(523);};
-try{if(localStorage.getItem(SAVE))$('continue').hidden=false;}catch{}
-$('continue').onclick=()=>{try{const s=JSON.parse(localStorage.getItem(SAVE));if(s?.chapter===4){startChapterFour(s);return;}if(s?.chapter===3){startChapterThree(s);return;}if(s?.chapter===2){startChapterTwo(s);return;}reset();restoreVitals(s);score=s.score||0;challenged=!!s.challenged;found=!!s.found;escort=!!s.escort;checkpoint=s.x||90;placePlayerOnGround(platforms,checkpoint);peaches.forEach((p,i)=>p.taken=!!s.taken?.[i]);$('cover').hidden=true;$('pause').hidden=false;tone(392);beginPlay();if(found)setSteps(2);}catch{start();}};
+function finish(){$('health').hidden=true;$('stamina').hidden=true;$('quest').hidden=true;mode='end';ending=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;$('pause').hidden=true;setSteps(2);const n=peaches.filter(p=>p.taken).length;$('ending').hidden=false;$('ending').innerHTML=`<span class="eyebrow">CHAPTER COMPLETE</span><h2>美 猴 王</h2><div class="cn-title">第一关 · 石破天惊，圆满完成</div><p>你为猴群寻得洞天，也赢得了他们的信任。</p><div class="stats"><div><strong>${n} / 12</strong><span>林间仙桃</span></div><div><strong>${score} / 3</strong><span>山海问答</span></div><div><strong>已发现</strong><span>水帘洞天</span></div></div><button class="primary" id="nextChapter">第二关 · 漂洋寻仙 →</button><button class="subtle" id="again">再游花果山 ↻</button>`;$('again').onclick=start;$('nextChapter').onclick=()=>startChapterTwo();$('status').textContent='第一关完成 · 美猴王诞生';$('hint').textContent='第一段旅程已完成，感谢你走进花果山。';unlockNextChapter(2,{phase:'cave',intro:true});tone(523,.3);setTimeout(()=>tone(784,.5),220);}
+function pause(){
+  jumpRequestedUntil=-1;
+  if(['cover','end','gameover'].includes(mode))return;
+  if(paused&&!$('chapterPanel').hidden){closeChapterSelect();return;}
+  paused=!paused;
+  keys.clear();
+  $('pausePanel').hidden=!paused;
+  $('saveResult').textContent='';
+  if(paused)$('resume').focus?.();
+  else $('stage').focus?.({preventScroll:true});
+}
+function manualSave(){
+  if(mode==='play')return saveCurrentCheckpoint();
+  return writeGameSave(progress.slots[chapter]??{chapter,intro:true});
+}
+function loadChapter(n){
+  const saved=progress.slots[n];
+  if(n===4){startChapterFour(saved);return;}
+  if(n===3){startChapterThree(saved);return;}
+  if(n===2){startChapterTwo(saved);return;}
+  if(!saved||saved.intro){start();return;}
+  reset();
+  restoreVitals(saved);
+  score=saved.score||0;
+  challenged=!!saved.challenged;
+  found=!!saved.found;
+  escort=!!saved.escort;
+  checkpoint=saved.x||90;
+  placePlayerOnGround(platforms,checkpoint);
+  peaches.forEach((p,i)=>p.taken=!!saved.taken?.[i]);
+  $('cover').hidden=true;
+  $('pause').hidden=false;
+  tone(392);
+  beginPlay();
+  if(found)setSteps(2);
+}
+function openChapterSelect(){
+  if(!paused)return;
+  for(let n=1;n<=CHAPTER_COUNT;n++){
+    const button=$('selectChapter'+n);
+    button.disabled=n>progress.unlocked;
+    const saved=progress.slots[n];
+    $('chapterState'+n).textContent=button.disabled?'未解锁':saved&&!saved.intro?'有存档':'已解锁';
+  }
+  $('pausePanel').hidden=true;
+  $('chapterPanel').hidden=false;
+  $('chapterBack').focus?.();
+}
+function closeChapterSelect(){
+  $('chapterPanel').hidden=true;
+  $('pausePanel').hidden=false;
+  $('chapterSelect').focus?.();
+}
+function selectChapter(n){
+  if(!paused||$('chapterPanel').hidden||n>progress.unlocked)return;
+  manualSave();
+  progress.active=n;
+  persistProgress();
+  loadChapter(n);
+}
+$('start').onclick=start;$('restart').onclick=start;$('resume').onclick=pause;$('pause').onclick=pause;
+$('sound').onclick=()=>{muted=!muted;$('sound').textContent='♫ 声音：'+(muted?'关':'开');tone(523);};
+$('continue').hidden=!progress.slots[progress.active];
+$('continue').onclick=()=>loadChapter(progress.active);
+$('saveNow').onclick=()=>{
+  $('saveResult').textContent=manualSave()?'已保存 · 下次从本关存档点继续':'无法保存到此浏览器';
+};
+$('chapterSelect').onclick=openChapterSelect;
+$('chapterBack').onclick=closeChapterSelect;
+for(let n=1;n<=CHAPTER_COUNT;n++)$('selectChapter'+n).onclick=()=>selectChapter(n);
 $('stage').addEventListener('click',e=>{if(e.target.closest('button'))return;advance();});
-window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.key===' ')e.preventDefault();if(e.repeat)return;if(mode==='book'&&!paused&&['ArrowLeft','ArrowRight'].includes(e.code)){flipBook(e.code==='ArrowLeft'?-1:1);return;}if(e.code==='Escape'){pause();return;}if(paused)return;if((e.code==='Space'||e.key===' ')&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'||e.key===' '||e.key==='ArrowUp'||e.key?.toLowerCase()==='w')jump();if(e.code==='KeyE')interact();if(e.code==='KeyF')castTransform();if(e.code==='KeyA')swingStaff();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end','gameover'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end','gameover'].includes(mode))pause();});
+window.addEventListener('keydown',e=>{if(paused&&e.code!=='Escape')return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.key===' ')e.preventDefault();if(e.repeat)return;if(mode==='book'&&!paused&&['ArrowLeft','ArrowRight'].includes(e.code)){flipBook(e.code==='ArrowLeft'?-1:1);return;}if(e.code==='Escape'){pause();return;}if(paused)return;if((e.code==='Space'||e.key===' ')&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'||e.key===' '||e.key==='ArrowUp'||e.key?.toLowerCase()==='w')jump();if(e.code==='KeyE')interact();if(e.code==='KeyF')castTransform();if(e.code==='KeyA')swingStaff();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end','gameover'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end','gameover'].includes(mode))pause();});
 document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();if(b.hasPointerCapture&&!b.hasPointerCapture(e.pointerId)){try{b.setPointerCapture(e.pointerId);}catch{}}keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();if(b.dataset.key==='KeyF')castTransform();if(b.dataset.key==='KeyA')swingStaff();});if(b.dataset.key==='Space')b.addEventListener('click',e=>{if(e.detail===0)jump();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
 function jump(){
   if(mode!=='play'||paused||slamActive||transformedForm?.flight)return;
@@ -630,11 +741,9 @@ let collected=new Set();
 let secondDialogueLine=0;
 
 function chapterTwoSave(){
-  try{
-    localStorage.setItem(SAVE,JSON.stringify({
-      chapter:2,phase:region,energy,learned,flightTrialDone,peaches:[...collected],checkpoint,...vitalSave()
-    }));
-  }catch{}
+  return writeGameSave({
+    chapter:2,phase:region,energy,learned,flightTrialDone,peaches:[...collected],checkpoint,...vitalSave()
+  });
 }
 function chapterTwoQuest(title){
   const card=$('quest');
@@ -1006,7 +1115,8 @@ function finishChapterTwo(){
   $('replaySecond').onclick=()=>startChapterTwo();
   $('replayFirst').onclick=start;
   $('status').textContent='第二关完成 · 习得七十二变';
-  saveChapterThree({scene:'mountain',intro:true,thirdPeaches:[],health:100,maxHealth:100,lives:3});
+  chapterTwoSave();
+  unlockNextChapter(3,{scene:'mountain',intro:true,health:100,maxHealth:100,lives:3});
 }
 function drawSailboat(x,y){
   poly([[x-57,y],[x+60,y],[x+42,y+17],[x-38,y+17]],'#754b35');
@@ -1382,12 +1492,10 @@ const deathBook=[
   ['水族名册',['鲤鱼','河蟹','青虾']]
 ];
 
-function saveChapterThree(state){
-  try{
-    localStorage.setItem(SAVE,JSON.stringify({
-      chapter:3,scene:thirdScene,hallEntered,hasStaff,energy,thirdPeaches:[...thirdPeachesTaken],trained,dragonSpoken,namesCleared,returnedFromUnderworld,checkpoint,...vitalSave(),...state
-    }));
-  }catch{}
+function saveChapterThree(){
+  return writeGameSave({
+    chapter:3,scene:thirdScene,hallEntered,hasStaff,energy,thirdPeaches:[...thirdPeachesTaken],trained,dragonSpoken,namesCleared,returnedFromUnderworld,checkpoint,...vitalSave()
+  });
 }
 function resetDemons(){
   const spawns=thirdScene==='palace'&&hasStaff?[
@@ -1471,10 +1579,10 @@ function refreshHealth(){
   $('livesValue').textContent='命 '+lives+'/3';
 }
 function saveCurrentCheckpoint(){
-  if(chapter===1)save();
-  else if(chapter===2)chapterTwoSave();
-  else if(chapter===3)saveChapterThree();
-  else saveChapterFour();
+  if(chapter===1)return save();
+  if(chapter===2)return chapterTwoSave();
+  if(chapter===3)return saveChapterThree();
+  return saveChapterFour();
 }
 function showDamage(x,y,amount,isPlayer=false){
   damageNumbers.push({x,y,amount,isPlayer,at:t});
@@ -1968,7 +2076,8 @@ function finishChapterThree(){
   const fourthStart={energy,health:maxHealth,maxHealth,lives:3};
   $('nextFourth').onclick=()=>startChapterFour(fourthStart);
   $('replayThird').onclick=()=>startChapterThree();
-  try{localStorage.setItem(SAVE,JSON.stringify({chapter:4,...fourthStart}));}catch{}
+  saveChapterThree();
+  unlockNextChapter(4,{intro:true,...fourthStart});
   $('status').textContent='第三关完成 · 四海千山皆拱伏';
   tone(523,.24);
 }
@@ -2609,12 +2718,10 @@ const heavenPosts=[
 ];
 let fourthScene='clouds', fedHorses=new Set(), heavenGuards=[], fourthComplete=false, fourthIntro=false;
 function saveChapterFour(){
-  try{
-    localStorage.setItem(SAVE,JSON.stringify({
-      chapter:4,phase:fourthScene,checkpoint,energy,fourthComplete,fed:[...fedHorses],
-      defeated:heavenGuards.filter(guard=>guard.hp<=0).map(guard=>guard.id),...vitalSave()
-    }));
-  }catch{}
+  return writeGameSave({
+    chapter:4,phase:fourthScene,checkpoint,energy,fourthComplete,fed:[...fedHorses],
+    defeated:heavenGuards.filter(guard=>guard.hp<=0).map(guard=>guard.id),...vitalSave()
+  });
 }
 function resetHeavenGuards(defeated=[]){
   heavenGuards=heavenPosts.map(post=>({...post,hp:defeated.includes(post.id)?0:post.maxHp,

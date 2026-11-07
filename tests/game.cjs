@@ -1,9 +1,16 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const nodes=new Map();function node(id){if(!nodes.has(id))nodes.set(id,{hidden:true,textContent:'',innerHTML:'',classList:{toggle(){},remove(){}},addEventListener(){},querySelectorAll(){return[];},getContext(){return{};}});return nodes.get(id);}
-const context=vm.createContext({document:{getElementById:node,querySelectorAll(){return[];},addEventListener(){}},window:{addEventListener(){}},localStorage:{getItem(){return null;},setItem(){},removeItem(){}},requestAnimationFrame(){},setTimeout(){},console});
+const storage=new Map();
+const context=vm.createContext({document:{getElementById:node,querySelectorAll(){return[];},addEventListener(){}},window:{addEventListener(){}},localStorage:{getItem(key){return storage.get(key)??null;},setItem(key,value){storage.set(key,value);},removeItem(key){storage.delete(key);}},requestAnimationFrame(){},setTimeout(){},console});
 vm.runInContext(fs.readFileSync('dist/game.js','utf8'),context);
 vm.runInContext(`
-start(); advance(); advance(); advance(); if(mode!=='quiz')throw Error('First quiz missing');answer(1);if(score!==0||!quizDone)throw Error('Incorrect answer handling');advance();for(let i=0;i<4;i++)advance();answer(1);advance();advance();if(mode!=='burst')throw Error('Birth transition');update(4);if(mode!=='play')throw Error('Control transition');
+start();pause();$('chapterSelect').onclick();
+if(!$('selectChapter2').disabled||$('selectChapter1').disabled)throw Error('Fresh profile must lock chapters 2–4');
+$('selectChapter2').onclick();
+if(chapter!==1||$('chapterPanel').hidden)throw Error('Locked chapter must not open');
+pause();if($('pausePanel').hidden||!paused)throw Error('Escape returns from selection to pause menu');
+pause();
+advance(); advance(); advance(); if(mode!=='quiz')throw Error('First quiz missing');answer(1);if(score!==0||!quizDone)throw Error('Incorrect answer handling');advance();for(let i=0;i<4;i++)advance();answer(1);advance();advance();if(mode!=='burst')throw Error('Birth transition');update(4);if(mode!=='play')throw Error('Control transition');
 for(let i=0;i<60;i++)update(1/60);if(!player.ground)throw Error('Spawn landing');
 const ceiling={x:100,y:320,w:95};
 Object.assign(player,{x:125,y:352,vy:-390,ground:false});
@@ -308,6 +315,21 @@ if(mode!=='end'||!fourthComplete)throw Error('Crowned Great Sage in the Water Cu
 startChapterFour({phase:'escape',checkpoint:608,defeated:['keeper'],energy:5});
 if(!player.ground||player.x!==608||heavenGuards[0].hp!==0||fourthScene!=='escape')throw Error('Resume fourth chapter combat checkpoint');
 
+pause();$('saveNow').onclick();
+if(!$('saveResult').textContent.includes('已保存'))throw Error('Manual save feedback');
+$('chapterSelect').onclick();
+if([1,2,3,4].some(n=>$('selectChapter'+n).disabled))throw Error('Completed chapters unlock selection');
+$('selectChapter1').onclick();
+if(chapter!==1||paused||!$('chapterPanel').hidden)throw Error('Select an unlocked chapter from pause');
+pause();$('chapterSelect').onclick();$('selectChapter4').onclick();
+if(chapter!==4||fourthScene!=='escape'||checkpoint!==608||heavenGuards[0].hp!==0)throw Error('Switching chapters preserves independent saves');
+const disk=loadGameProgress();
+if(disk.active!==4||disk.unlocked!==4||disk.slots[4].checkpoint!==608||!disk.slots[1])throw Error('Persisted profile across reloads');
+localStorage.removeItem(PROGRESS);
+localStorage.setItem(SAVE,JSON.stringify({chapter:3,scene:'underworld',checkpoint:1440}));
+const migrated=loadGameProgress();
+if(migrated.unlocked!==3||migrated.active!==3||migrated.slots[3].checkpoint!==1440)throw Error('Keep legacy single save');
+
 
 `,context);
-console.log('PASS: story, incorrect/correct answers, birth, physics, all platforms in both directions, challenge, discovery, return and chapter four.');
+console.log('PASS: story, incorrect/correct answers, birth, physics, all platforms in both directions, challenge, discovery, return, chapter four, saves and chapter selection.');
