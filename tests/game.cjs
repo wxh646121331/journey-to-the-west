@@ -25,6 +25,10 @@ interact();if(mode!=='quiz'||!activeQuiz.final)throw Error('Throne objective');a
 startChapterTwo();
 for(let i=0;i<6;i++)advance();
 if(chapter!==2||region!=='cave'||mode!=='play')throw Error('Second chapter opening');
+Object.assign(player,{x:90,y:390,vy:120,ground:false});
+jump();
+for(let i=0;i<10&&player.vy>=0;i++){t+=1/120;update(1/120);}
+if(player.vy>=0)throw Error('Jump pressed before landing was lost');
 for(const route of Object.values(secondRoutes)){
   for(let i=0;i<route.length-1;i++){
     const a=route[i],b=route[i+1];
