@@ -18,7 +18,7 @@ function tone(f=440,d=.12){if(muted)return;try{audio??=new (window.AudioContext|
 function toast(s){$('toast').textContent=s;toastUntil=t+3.5;}
 function setSteps(n){for(let i=0;i<3;i++)$('step'+i).classList.toggle('active',i<=n);}
 function save(){if(mode!=='play')return;try{localStorage.setItem(SAVE,JSON.stringify({x:checkpoint,score,taken:peaches.map(p=>p.taken),found,challenged,escort}));}catch{}}
-function reset(){jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
+function reset(){$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false){activeQuiz={...q,final};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
@@ -461,11 +461,11 @@ function startChapterTwo(saved){
   $('hint').textContent='仙桃补充元气。学会变化后，可按 F 施法。';
   renderEnergy();
   if(region==='shore'){
-    openSecondRoute(learned?'消耗 2 点元气，试一次七十二变':'沿山道寻找菩提祖师');
+    openSecondRoute(learned?'消耗 2 点元气，试一次七十二变':'拜见菩提祖师');
     return;
   }
   if(saved?.checkpoint){
-    openSecondRoute('从右侧出洞，前往海边的小帆船');
+    openSecondRoute('找到海边的帆船');
     return;
   }
   chapterTwoDialogue([
@@ -475,7 +475,7 @@ function startChapterTwo(saved){
     ['美猴王','可有谁知道，怎样才能不死？'],
     ['老猴','我听说，神仙和佛能够超脱生死。大王若想求个明白，可以出海去访一访。'],
     ['美猴王','那我便渡海去寻师，求个长生之法。']
-  ],()=>openSecondRoute('右侧洞门已开。出洞，前往海边的小帆船'));
+  ],()=>openSecondRoute('找到海边的帆船'));
 }
 function openSecondRoute(quest){
   mode='play';
@@ -497,7 +497,7 @@ function arriveAcrossSea(){
   chapterTwoDialogue([
     ['海上','一叶帆船乘风破浪。美猴王漂过南赡部洲，又渡西海，终于来到西牛贺洲。'],
     ['西牛贺洲','岸边有人指向远山。山中有一处洞府，名为斜月三星洞。']
-  ],()=>openSecondRoute('沿山道寻找菩提祖师'));
+  ],()=>openSecondRoute('拜见菩提祖师'));
 }
 function interactChapterTwo(){
   if(region!=='shore'||player.x<1580)return;
@@ -518,13 +518,15 @@ function castTransform(){
   if(energy<2){toast('元气不足。沿路拾两颗仙桃再来试。');return;}
   energy-=2;
   renderEnergy();
-  transformedUntil=t+2.2;
+  transformedUntil=t+10;
+  $('flightDown').hidden=false;
+  $('hint').textContent='方向键自由飞行。触屏可用左右键、跳跃键上升、▼ 下降。';
   player.vy=-160;
   player.ground=false;
   scatter(player.x+12,player.y+15,42,['#fff0af','#efb767','#c4e3ac'],115);
   chirp(370,720,.35,0,.09,'triangle');
   chapterTwoSave();
-  chapterTwoQuest('七十二变 · 化作飞雀');
+  chapterTwoQuest('七十二变 · 化作飞鹤');
 }
 function updateChapterTwo(dt){
   if(mode==='voyage'){
@@ -535,6 +537,7 @@ function updateChapterTwo(dt){
   if(mode!=='play')return;
   if(transformedUntil&&t>=transformedUntil){
     transformedUntil=0;
+    $('flightDown').hidden=true;
     finishChapterTwo();
     return;
   }
@@ -542,30 +545,39 @@ function updateChapterTwo(dt){
   const route=secondRoutes[region];
   p.vx=(keys.has('ArrowRight')||keys.has('KeyD')?205:0)-(keys.has('ArrowLeft')||keys.has('KeyA')?205:0);
   if(p.vx)p.face=Math.sign(p.vx);
-  const oldBottom=p.y+p.h;
-  const onGround=p.ground;
-  p.x=Math.max(0,Math.min(route.at(-1).x+route.at(-1).w-24,p.x+p.vx*dt));
-  p.vy+=(t<transformedUntil?195:1170)*dt;
-  p.y+=p.vy*dt;
-  p.ground=false;
-  for(const floor of route){
-    if(p.x+p.w>floor.x&&p.x<floor.x+floor.w&&oldBottom<=floor.y+3&&p.y+p.h>=floor.y&&p.vy>=0){
-      p.y=floor.y-p.h;
-      p.vy=0;
-      p.ground=true;
-      break;
+  if(t<transformedUntil){
+    const climb=keys.has('ArrowUp')||keys.has('KeyW')||keys.has('Space');
+    const descend=keys.has('ArrowDown')||keys.has('KeyS');
+    p.x=Math.max(0,Math.min(route.at(-1).x+route.at(-1).w-24,p.x+p.vx*dt));
+    p.y=Math.max(62,Math.min(350,p.y+((descend?145:0)-(climb?145:0))*dt));
+    $('counts').textContent='飞行 '+Math.ceil(transformedUntil-t)+' 秒';
+  }else{
+    const oldBottom=p.y+p.h;
+    const onGround=p.ground;
+    p.x=Math.max(0,Math.min(route.at(-1).x+route.at(-1).w-24,p.x+p.vx*dt));
+    p.vy+=1170*dt;
+    p.y+=p.vy*dt;
+    p.ground=false;
+    for(const floor of route){
+      if(p.x+p.w>floor.x&&p.x<floor.x+floor.w&&oldBottom<=floor.y+3&&p.y+p.h>=floor.y&&p.vy>=0){
+        p.y=floor.y-p.h;
+        p.vy=0;
+        p.ground=true;
+        break;
+      }
     }
+    if(p.ground&&p.vx&&t>=stepAt){stepAt=t+.26;footstep();}
+    if(!onGround&&p.ground)footstep(true);
+    applyJumpRequest();
+    if(p.y>590){jumpRequestedUntil=-1;p.x=checkpoint;p.y=305;p.vy=0;toast('回到最近的落脚点。');}
+    if(p.ground&&p.x>1430&&p.x<1510&&checkpoint<1430){checkpoint=1440;chapterTwoSave();}
   }
-  if(p.ground&&p.vx&&t>=stepAt){stepAt=t+.26;footstep();}
-  if(!onGround&&p.ground)footstep(true);
-  applyJumpRequest();
-  if(p.y>590){jumpRequestedUntil=-1;p.x=checkpoint;p.y=305;p.vy=0;toast('回到最近的落脚点。');}
-  if(p.ground&&p.x>1430&&p.x<1510&&checkpoint<1430){checkpoint=1440;chapterTwoSave();}
   secondPeaches[region].forEach(([x,y],i)=>{
     const id=region+i;
-    if(collected.has(id)||energy===10||Math.abs(p.x+12-x)>=25||Math.abs(p.y+17-y)>=34)return;
+    const touchesPeach=p.x+p.w+7>=x-7&&p.x-7<=x+7&&p.y+p.h+8>=y-10&&p.y-8<=y+7;
+    if(collected.has(id)||!touchesPeach)return;
     collected.add(id);
-    energy++;
+    energy=Math.min(10,energy+1);
     renderEnergy();
     scatter(x,y,26,['#ffd39a','#f1a785','#f9edbd'],90);
     tone(740,.09);
@@ -575,15 +587,15 @@ function updateChapterTwo(dt){
   $('area').textContent=region==='shore'?'西牛贺洲 · 灵台方寸山':p.x<600?'花果山 · 水帘洞':'花果山 · 出海山道';
   if(region==='cave'&&p.x>1580&&p.ground){
     dockWait+=dt;
-    if(dockWait<dt*2)chapterTwoQuest('登船准备中，稍候片刻');
+    if(dockWait<dt*2)toast('登船准备中，稍候片刻。');
     if(dockWait>=1.25){
       mode='voyage';
       $('touch').hidden=true;
-      chapterTwoQuest('渡海寻仙');
+      $('quest').hidden=true;
+      $('status').textContent='渡海寻仙';
     }
   }else if(dockWait){
     dockWait=0;
-    chapterTwoQuest('前往海边的小帆船');
   }
 }
 function finishChapterTwo(){
@@ -676,11 +688,7 @@ function drawChapterTwo(){
     if(!collected.has(region+i))peach(x-c,y);
   });
   if(t<transformedUntil){
-    const x=player.x+12-c;
-    const y=player.y+15+Math.sin(t*9)*3;
-    rect(x-9,y,17,8,'#e8c06f');
-    rect(x-5,y-6+Math.sin(t*18)*5,9,10,'#fff1a3');
-    rect(x+6,y-2,7,6,'#b98a48');
+    drawCrane(player.x+12-c,player.y+15,player.face);
   }else{
     monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx,1,true);
   }
@@ -694,4 +702,22 @@ function drawChapterTwo(){
     ctx.font='14px sans-serif';
     ctx.fillText(learned?'[ F ] 七十二变':'[ E ] 拜见菩提祖师',1550-c,318);
   }
+}
+
+function drawCrane(x,y,face){
+  ctx.save();
+  ctx.translate(Math.round(x),Math.round(y));
+  ctx.scale(face,1);
+  const wing=Math.round(Math.sin(t*14)*15);
+  poly([[-10,-3],[-23,-8],[-19,1],[-10,5],[5,4],[12,0],[9,-4]],'#f5eed8');
+  poly([[-12,0],[-24,3],[-28,4],[-29,2],[-15,-3]],'#867866');
+  poly([[4,-2],[12,-7],[18,-9],[23,-7],[23,-4],[16,-4],[9,2]],'#fff9e7');
+  rect(19,-10,4,2,'#b74d37');
+  rect(22,-7,1,1,'#243832');
+  poly([[23,-7],[32,-6],[23,-4]],'#b49255');
+  poly([[-9,1],[-15,wing-12],[-22,wing-16],[-18,wing-6],[-5,wing+3],[4,1]],'#fff9e7');
+  poly([[-15,wing-12],[-22,wing-16],[-21,wing-9],[-16,wing-4],[-13,wing-5]],'#344448');
+  rect(-19,5,9,1,'#aa8b5a');
+  rect(-23,6,8,1,'#aa8b5a');
+  ctx.restore();
 }
