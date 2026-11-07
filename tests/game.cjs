@@ -298,22 +298,72 @@ if(fedHorses.size!==3)throw Error('Each horse only counts once');
 placePlayerOnGround(fourthRoutes.stable,917);interact();
 for(let i=0;i<4;i++)advance();
 if(mode!=='play'||fourthScene!=='escape')throw Error('Discover the rank and start escape');
-placePlayerOnGround(fourthRoutes.escape,1613);interact();
+placePlayerOnGround(fourthRoutes.escape,HEAVEN_GATE-12);interact();
 if(mode!=='play')throw Error('Cannot leave South Heaven Gate with defenders undefeated');
 for(const guard of heavenGuards){
   placePlayerOnGround(fourthRoutes.escape,guard.x-60);
   player.face=1;
   t+=1.1;swingStaff();
-  if(guard.hp!==guard.maxHp-7)throw Error('Fourth chapter staff damage');
+  if(guard.hp!==guard.maxHp-(guard.kind==='thunder'?6.3:7))throw Error('Fourth chapter staff damage and thunder armor');
   while(guard.hp>0){t+=1.1;swingStaff();}
 }
-placePlayerOnGround(fourthRoutes.escape,1613);interact();advance();
+placePlayerOnGround(fourthRoutes.escape,HEAVEN_GATE-12);interact();advance();
 if(mode!=='play'||fourthScene!=='cave'||!player.ground)throw Error('Return from the South Heaven Gate');
 placePlayerOnGround(fourthRoutes.cave,643);interact();
 for(let i=0;i<4;i++)advance();
 if(mode!=='end'||!fourthComplete)throw Error('Crowned Great Sage in the Water Curtain Cave');
 startChapterFour({phase:'escape',checkpoint:608,defeated:['keeper'],energy:5});
 if(!player.ground||player.x!==608||heavenGuards[0].hp!==0||fourthScene!=='escape')throw Error('Resume fourth chapter combat checkpoint');
+
+const thunderGuard=heavenGuards.find(guard=>guard.kind==='thunder');
+const flameGuard=heavenGuards.find(guard=>guard.kind==='flame');
+const heavenBoss=heavenGuards.at(-1);
+if(thunderGuard.hp!==50||flameGuard.hp!==35||heavenBoss.hp!==200)throw Error('Fourth chapter enemy health');
+if(thunderGuard.windup+thunderGuard.recovery!==1||flameGuard.windup+flameGuard.recovery!==1)throw Error('One second sword intervals');
+maxHealth=100;health=100;immuneUntil=0;
+placePlayerOnGround(fourthRoutes.escape,thunderGuard.x-40);
+thunderGuard.dir=-1;thunderGuard.strikeAt=t;
+Math.random=()=>.19;updateDemons(0,fourthRoutes.escape,[thunderGuard]);Math.random=random;
+if(health!==55||!heavenBolts.length)throw Error('Thunder sword 25 damage plus 20 from lightning');
+health=100;immuneUntil=0;
+thunderGuard.strikeAt=t;Math.random=()=>.20;updateDemons(0,fourthRoutes.escape,[thunderGuard]);Math.random=random;
+if(health!==75)throw Error('Thunder proc must stop at 20 percent');
+health=100;immuneUntil=0;
+placePlayerOnGround(fourthRoutes.escape,flameGuard.x-35);
+flameGuard.dir=-1;flameGuard.strikeAt=t;
+updateDemons(0,fourthRoutes.escape,[flameGuard]);
+if(health!==80)throw Error('Flame soldier sword damage');
+health=100;immuneUntil=0;
+placePlayerOnGround(fourthRoutes.escape,740);
+flameGuard.castAt=t;updateHeavenFireballs(0);
+if(!heavenFireballs.length)throw Error('Flame soldier creates ranged fireball');
+for(let i=0;i<120&&health===100;i++){t+=1/120;updateHeavenFireballs(1/120);}
+if(health!==80)throw Error('Fireball collision damage');
+clearHeavenCombat();
+health=100;immuneUntil=0;
+placePlayerOnGround(fourthRoutes.escape,heavenBoss.x-70);
+t=heavenBossReady;updateHeavenBoss(0);
+if($('heavenBossHud').hidden||$('heavenBossValue').textContent!=='200 / 200'||heavenBossMove.kind!=='charge')throw Error('Boss HUD and first skill');
+t=heavenBossMove.ends;updateHeavenBoss(0);
+for(let i=0;i<30&&health===100;i++){t+=1/120;updateHeavenBoss(1/120);}
+if(health!==60)throw Error('Boss fireball charge 40 damage');
+t=heavenBossMove.ends;updateHeavenBoss(0);
+health=100;immuneUntil=0;
+t=heavenBossReady;updateHeavenBoss(0);
+if(heavenBossMove.kind!=='lightning'||heavenBossMove.columns.length!==3||$('heavenWarning').hidden)throw Error('Three marked lightning columns');
+placePlayerOnGround(fourthRoutes.escape,heavenBossMove.columns[1]-12);
+t=heavenBossMove.ends-.01;updateHeavenBoss(0);
+if(health!==100)throw Error('Lightning must wait three seconds');
+t=heavenBossMove.ends;updateHeavenBoss(0);
+if(health!==70||heavenBolts.length!==3)throw Error('Three lightning strikes at deadline');
+health=100;immuneUntil=0;
+t=heavenBossReady;updateHeavenBoss(0);
+if(heavenBossMove.kind!=='slam'||$('heavenWarning').hidden)throw Error('Boss greatsword charge');
+t=heavenBossMove.ends-.01;updateHeavenBoss(0);
+if(health!==100||heavenBoss.y>=428)throw Error('Boss jumps and charges without early damage');
+t=heavenBossMove.ends;updateHeavenBoss(0);
+if(health!==50||heavenBoss.y!==428||!$('heavenWarning').hidden)throw Error('Greatsword impact after three seconds');
+startChapterFour({phase:'escape',checkpoint:608,defeated:['keeper'],energy:5});
 
 pause();$('saveNow').onclick();
 if(!$('saveResult').textContent.includes('已保存'))throw Error('Manual save feedback');

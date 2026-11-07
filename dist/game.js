@@ -70,7 +70,7 @@ function placePlayerOnGround(route,x){
   Object.assign(player,{x:safeX,y:floor.y-player.h,vx:0,vy:0,ground:true});
   jumpRequestedUntil=-1;
 }
-function reset(){$('practiceNext').hidden=true;clearTransformation();slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;effectRings.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;$('chapterPanel').hidden=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;paused=false;keys.clear();}
+function reset(){$('heavenBossHud').hidden=true;$('heavenWarning').hidden=true;$('practiceNext').hidden=true;clearTransformation();slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;effectRings.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;$('chapterPanel').hidden=true;$('dialog').hidden=true;$('hud').hidden=true;$('touch').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false,next=null){activeQuiz={...q,final,next};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
@@ -1873,8 +1873,9 @@ function swingStaff(){
   }
 }
 function hitEnemy(demon,damage){
-  demon.hp=Math.max(0,demon.hp-damage);
-  showDamage(demon.x,demon.y-48,damage);
+  const applied=Math.round(damage*(1-(demon.armor??0))*10)/10;
+  demon.hp=Math.max(0,Math.round((demon.hp-applied)*10)/10);
+  showDamage(demon.x,demon.y-48,applied);
   demon.aggro=true;
   demon.dir=Math.sign(player.x+12-demon.x)||demon.dir;
   demon.strikeAt=0;
@@ -1939,8 +1940,13 @@ function updateDemons(dt,route=thirdRoutes[thirdScene],enemies=demons){
         chirp(145,73,.16,0,.07,'triangle');
       }
       const attackGap=(player.x+12-demon.x)*demon.dir;
+      const lightning=demon.kind==='thunder'&&Math.random()<.2;
       if(sameHeight&&attackGap>=-10&&attackGap<demon.reach+11&&t>=immuneUntil){
         hurtPlayer(demon.damage,true);
+        if(lightning){
+          hurtPlayer(20,true);
+          strikeHeavenLightning([player.x+12]);
+        }
         immuneUntil=t+.7;
         noiseHit(.2,.22,870,100);
       }
@@ -2701,7 +2707,7 @@ const fourthRoutes={
     {x:749,y:377,w:164},{x:965,y:335,w:153},{x:1170,y:369,w:175},{x:1400,y:402,w:360}],
   stable:[{x:0,y:428,w:1080}],
   escape:[{x:0,y:428,w:535},{x:588,y:398,w:213},{x:848,y:369,w:188},
-    {x:1083,y:402,w:223},{x:1354,y:428,w:405}],
+    {x:1083,y:402,w:223},{x:1354,y:428,w:560}],
   cave:[{x:0,y:432,w:960}]
 };
 const fourthArea={clouds:'天庭 · 云阶',stable:'天庭 · 御马监',escape:'天庭 · 南天门外廊',cave:'花果山 · 水帘洞'};
@@ -2710,13 +2716,19 @@ const heavenlyHorses=[
   {x:518,coat:'#ddd0ac',mane:'#9e8769'},
   {x:747,coat:'#797d86',mane:'#464a5c'}
 ];
+const HEAVEN_GATE=1825;
+const HEAVEN_ARENA_LEFT=1354;
+const HEAVEN_ARENA_RIGHT=1914;
+const heavenSword={windup:.32,recovery:.68,reach:56};
 const heavenPosts=[
   {id:'keeper',x:402,min:315,max:509,y:428,kind:'keeper',maxHp:18,damage:12,windup:.62,recovery:1.05,speed:88,reach:48},
-  {id:'guard1',x:692,min:613,max:784,y:398,kind:'celestial',maxHp:22,damage:17,windup:.62,recovery:1.06,speed:91,reach:59},
-  {id:'guard2',x:947,min:865,max:1014,y:369,kind:'celestial',maxHp:22,damage:17,windup:.62,recovery:1.06,speed:91,reach:59},
-  {id:'general',x:1190,min:1103,max:1283,y:402,kind:'general',maxHp:34,damage:25,windup:.83,recovery:1.18,speed:98,reach:63}
+  {id:'guard1',x:692,min:613,max:784,y:398,kind:'thunder',maxHp:50,armor:.10,damage:25,speed:91,...heavenSword},
+  {id:'guard2',x:947,min:865,max:1014,y:369,kind:'flame',maxHp:35,damage:20,speed:80,...heavenSword},
+  {id:'guard3',x:1190,min:1103,max:1283,y:402,kind:'flame',maxHp:35,damage:20,speed:91,...heavenSword},
+  {id:'heaven-boss',x:1642,y:428,kind:'general',maxHp:200}
 ];
 let fourthScene='clouds', fedHorses=new Set(), heavenGuards=[], fourthComplete=false, fourthIntro=false;
+let heavenFireballs=[], heavenBolts=[], heavenBossMove=null, heavenBossTurn=0, heavenBossReady=0;
 function saveChapterFour(){
   return writeGameSave({
     chapter:4,phase:fourthScene,checkpoint,energy,fourthComplete,fed:[...fedHorses],
@@ -2725,7 +2737,21 @@ function saveChapterFour(){
 }
 function resetHeavenGuards(defeated=[]){
   heavenGuards=heavenPosts.map(post=>({...post,hp:defeated.includes(post.id)?0:post.maxHp,
-    dir:-1,ground:true,vy:0,landing:null,strikeAt:0,readyAt:t+.6,aggro:false}));
+    dir:-1,ground:true,vy:0,landing:null,strikeAt:0,readyAt:t+.6,aggro:false,
+    castAt:0,spellReadyAt:t+.8}));
+  clearHeavenCombat();
+}
+function clearHeavenCombat(){
+  heavenFireballs=[];
+  heavenBolts=[];
+  heavenBossMove=null;
+  heavenBossTurn=0;
+  heavenBossReady=t+1.1;
+  for(const guard of heavenGuards)guard.castAt=0;
+  const boss=heavenGuards.at(-1);
+  if(boss)boss.y=428;
+  $('heavenBossHud').hidden=true;
+  $('heavenWarning').hidden=true;
 }
 function fourthCameraLimit(){
   const end=fourthRoutes[fourthScene].at(-1);
@@ -2759,6 +2785,7 @@ function openFourthRoute(){
 }
 function switchFourthScene(scene){
   fourthIntro=false;
+  clearHeavenCombat();
   fourthScene=scene;
   checkpoint=90;
   cam=0;
@@ -2839,7 +2866,7 @@ function interactChapterFour(){
         ['监官','擅自离开御马监？且慢！']
       ],()=>switchFourthScene('escape'));
     }
-  }else if(fourthScene==='escape'&&nearFourth(1625,72)){
+  }else if(fourthScene==='escape'&&nearFourth(HEAVEN_GATE,72)){
     if(heavenGuards.some(guard=>guard.hp>0)){toast('还有天兵天将拦路，先打退他们！');return;}
     chapterTwoDialogue([
       ['南天门','悟空打退追来的天兵天将，冲出南天门，驾云返回花果山。']
@@ -2860,10 +2887,12 @@ function updateChapterFour(dt){
   const limit=escaping&&heavenGuards[0].hp>0?496:Infinity;
   if(updateTransformation(dt,route))player.x=Math.min(player.x,limit);
   else moveStaffPlayer(route,dt,limit);
-  if(player.y>590){fallAndRespawn(route);return;}
+  if(player.y>590){if(escaping)clearHeavenCombat();fallAndRespawn(route);return;}
   if(escaping){
-    updateDemons(dt,route,heavenGuards);
-    if(health<=0){loseLife(route);return;}
+    updateHeavenFireballs(dt);
+    updateDemons(dt,route,heavenGuards.slice(0,-1));
+    updateHeavenBoss(dt);
+    if(health<=0){clearHeavenCombat();loseLife(route);return;}
     const quest=fourthQuest();
     if($('questTitle').textContent!==quest)chapterTwoQuest(quest);
     const defeated=heavenGuards.filter(guard=>guard.hp===0);
@@ -2883,6 +2912,7 @@ function updateChapterFour(dt){
 }
 function finishChapterFour(){
   fourthComplete=true;
+  clearHeavenCombat();
   mode='end';
   for(const id of ['stamina','health','energy','quest','hud','touch','pause','dialog'])$(id).hidden=true;
   $('ending').hidden=false;
@@ -2920,28 +2950,75 @@ function drawChapterFour(){
   drawParticles(c);
 }
 function drawHeavenAudience(){
-  rect(0,0,W,H,lightGradient(0,0,0,H,[[0,'#3d5060'],[.55,'#7e9b96'],[1,'#d1c2a1']]));
-  rect(0,116,W,10,'#c1a06a');
+  const gold='#e0bc77', shadow='#283c44';
+  rect(0,0,W,H,lightGradient(0,0,0,H,[[0,'#253849'],[.51,'#7d9b96'],[1,'#e7cda0']]));
+  glow(563,266,278,'#ffe6a274');
+  for(let i=0;i<5;i++){
+    const x=24+i*210;
+    rect(x,128,132,236,shadow);
+    rect(x+8,135,116,223,'#9da995');
+    rect(x+12,143,108,202,'#c3b48e');
+    for(let y=151;y<341;y+=23)rect(x+14,y,104,2,'#7e8779');
+    for(let dx=21;dx<120;dx+=17)rect(x+dx,145,2,194,'#758478');
+    rect(x-1,356,134,8,gold);
+    lightShaft(x+103,154,257,85,'#fff1b550');
+  }
+  poly([[0,0],[W,0],[838,84],[119,84]],shadow);
+  for(let i=0;i<5;i++){
+    const y=14+i*17;
+    rect(0,y,W,4,i%2?'#606c68':'#aa8e64');
+    for(let x=16;x<W;x+=45)rect(x+i*7,y+5,21,3,'#48635e');
+  }
+  rect(0,90,W,24,'#344f50');
+  rect(0,91,W,3,gold);rect(0,110,W,3,gold);
   for(let i=0;i<5;i++){
     const x=61+i*208;
-    rect(x,115,25,312,'#48635f');
-    rect(x+5,126,4,290,'#77958a');
-    rect(x-6,412,37,15,'#ad9e79');
-    glow(x+90,176,80,'#ffe3a355');
-    drawBodhiLantern(x+90,145);
+    rect(x-5,111,36,11,gold);
+    rect(x,122,25,296,'#446460');
+    rect(x+4,129,4,286,'#698e83');rect(x+20,127,4,287,'#a8ab8c');
+    for(let j=0;j<5;j++){
+      const y=171+j*43;
+      poly([[x+5,y],[x+13,y-7],[x+22,y],[x+13,y+7]],'#718d75');
+      rect(x+11,y-1,4,2,gold);
+    }
+    rect(x-6,410,37,17,'#ad9e79');
+    rect(x-6,410,37,3,'#e6c893');
+    glow(x+90,171,82,'#ffe3a355');
+    drawBodhiLantern(x+90,140);
   }
-  rect(0,427,W,113,'#617572');
-  rect(0,427,W,3,'#d8bd87');
-  rect(474,270,180,156,'#34514d');
-  rect(474,270,180,4,'#e5c27f');
+  rect(0,427,W,113,lightGradient(0,427,0,H,[[0,'#84908b'],[1,'#4b6265']]));
+  for(let i=0;i<6;i++){
+    const y=430+i*i*4;
+    rect(0,y,W,1,'#d0c8a4');
+    for(let x=-36;x<W;x+=124)rect(x+(i%2)*62,y,1,Math.max(2,i*8),'#536b6a');
+  }
+  poly([[489,405],[639,405],[741,H],[384,H]],'#9e594f');
+  poly([[493,409],[497,409],[399,H],[391,H]],gold);
+  poly([[630,409],[634,409],[730,H],[722,H]],gold);
+  rect(480,284,168,137,'#34514d');
+  rect(486,290,156,127,'#54756c');
+  for(const side of [-1,1]){
+    const x=564+side*65;
+    rect(x-2,294,4,120,gold);
+    rect(x-6,310,12,3,'#d1a76d');
+  }
+  glow(564,318,88,'#efcf916b');
+  for(let i=0;i<3;i++){
+    rect(491-i*10,410+i*6,146+i*20,6,'#667e76');
+    rect(491-i*10,410+i*6,146+i*20,2,gold);
+  }
   drawThirdThrone(564,415,'#486e62','#d5ae6f');
-  poly([[535,400],[544,365],[582,365],[593,400]],'#ac774c');
+  poly([[531,400],[542,365],[585,365],[596,400]],'#975e46');
+  poly([[537,398],[548,369],[578,369],[590,398]],'#c18750');
+  rect(542,393,43,2,gold);rect(561,374,7,13,gold);
   rect(549,350,31,22,'#d1a683');rect(546,346,37,5,'#3f3d41');
   rect(554,337,22,10,'#5b4943');rect(559,338,11,3,'#e0ba75');
-  rect(557,357,4,2,'#3f3b40');rect(571,357,4,2,'#3f3b40');
+  for(let i=0;i<7;i++)rect(548+i*5,350,1,8+i%2*2,gold);
+  rect(557,358,4,2,'#3f3b40');rect(571,358,4,2,'#3f3b40');
   poly([[554,363],[577,363],[572,379],[566,386],[559,378]],'#423e40');
   drawTaibai(335,426);
-  drawBodhiLabel('凌霄宝殿',564,247);
+  drawHeavenOfficer(430,427,'thunder',1,false);
+  drawHeavenOfficer(704,427,'flame',-1,false);
 }
 function drawTaibai(x,y){
   poly([[x-20,y],[x-13,y-34],[x+11,y-36],[x+20,y]],'#53686a');
@@ -2954,6 +3031,13 @@ function drawTaibai(x,y){
 function drawCloudRoad(c){
   rect(0,0,W,H,lightGradient(0,0,0,H,[[0,'#628daf'],[.57,'#c0d9d4'],[1,'#f6dbad']]));
   glow(747-c*.12,94,176,'#fff1bb9c');
+  for(let i=0;i<7;i++){
+    const x=i*238-c*.23-128,y=279+(i%3)*18;
+    rect(x+46,y-57,58,77,'#94a9a4');
+    drawBodhiRoof(x+75,y-55,52,31);
+    rect(x+69,y-32,14,48,'#738e8b');
+    rect(x+17,y+14,133,9,'#d8d5ba');
+  }
   for(let i=0;i<14;i++){
     const x=((i*161-c*.24+t*4)%1270+1270)%1270-120;
     const y=110+i*47%360;
@@ -2966,10 +3050,15 @@ function drawCloudRoad(c){
       [left+w-44,y+27],[left+27,y+24],[left+8,y+15]],'#7f9ea5');
     rect(left,y,w,7,'#fff2d7');
     rect(left+8,y+7,w-16,7,'#d8e3d6');
-    for(let i=12;i<w-20;i+=32)rect(left+i,y+15,18,3,'#acbfbb');
+    for(let i=12;i<w-20;i+=32){
+      const offset=3*Math.sin(t*1.7+i*.15+x);
+      rect(left+i,y+15,18,3,'#acbfbb');
+      rect(left+i+5,y+21+offset,22,3,'#8da6ab');
+      rect(left+i-4,y-2,16,2,'#fff9df');
+    }
   }
   const escaping=fourthScene==='escape';
-  const gate=(escaping?1625:1584)-c;
+  const gate=(escaping?HEAVEN_GATE:1584)-c;
   const ground=escaping?428:402;
   const title=escaping?'南天门':'御马监';
   if(escaping){
@@ -2984,6 +3073,7 @@ function drawCloudRoad(c){
   }else drawBodhiExterior(gate,ground,title);
   if(escaping){
     drawBodhiLabel(title,gate,ground-105);
+    drawHeavenHazards(c);
     for(const guard of heavenGuards)if(guard.hp>0)drawHeavenGuard(guard,c);
   }
   if(mode==='play'&&nearFourth(gate+c,escaping?72:55))drawBodhiLabel(escaping?'[ E ] 出南天门':'[ E ] 进入御马监',gate,ground-185);
@@ -2991,7 +3081,15 @@ function drawCloudRoad(c){
 function drawHeavenStable(c){
   rect(0,0,W,H,lightGradient(0,0,0,H,[[0,'#3c453d'],[.58,'#958266'],[1,'#b4986f']]));
   rect(0,128,W,8,'#75543d');
-  rect(0,428,W,H-428,'#76664e');rect(0,428,W,4,'#c5a87b');
+  rect(0,123,W,4,'#b1885e');
+  for(let i=0;i<12;i++){
+    const x=i*114-c*.58;
+    poly([[x-32,0],[x+30,0],[x+103,125],[x+73,125]],'#483e35');
+    rect(x+73,119,35,4,'#a7875c');
+  }
+  rect(0,428,W,H-428,lightGradient(0,428,0,H,[[0,'#8a7759'],[1,'#564d3e']]));
+  for(let i=0;i<5;i++)rect(0,433+i*i*5,W,1,'#ae9467');
+  rect(0,428,W,4,'#c5a87b');
   for(let i=0;i<5;i++){
     const x=40+i*228-c;
     rect(x,168,166,130,'#beaa7d');
@@ -3035,38 +3133,101 @@ function drawHeavenHorse(horse,x,y,fed){
   rect(x+26,y-66+dip,3,7,ink);rect(x+32,y-56+dip,2,2,ink);
   rect(x+35,y-49+dip,6,2,horse.mane);rect(x+25,y-58+dip,2,12,'#c69b64');
 }
-function drawHeavenOfficer(x,y,kind,face,attacking){
+function drawHeavenOfficer(x,y,kind,face,attacking,bladeScale=1){
   ctx.save();
   ctx.translate(x,y);
   ctx.scale(face,1);
   const general=kind==='general', keeper=kind==='keeper';
-  const ink='#344047', trim=general?'#efbb6b':'#c9bc89';
-  const armor=keeper?'#80654b':general?'#8a5752':'#5a7a7c';
+  const ink='#293840', trim=general?'#efbb6b':kind==='thunder'?'#afd6ee':'#edbd7d';
+  const armor=keeper?'#80654b':general?'#9a4c43':kind==='thunder'?'#527a9a':'#ab6550';
+  if(general)poly([[-11,-31],[-25,-24],[-29,-6],[-17,-9],[-7,-23]],'#783d49');
   rect(-9,-9,6,9,ink);rect(4,-9,6,9,ink);
   poly([[-15,-5],[-13,-27],[-6,-34],[8,-34],[15,-25],[14,-5]],ink);
   poly([[-12,-8],[-11,-26],[-5,-31],[7,-31],[12,-25],[11,-8]],armor);
   rect(-11,-19,22,3,trim);rect(-8,-13,16,2,trim);
+  rect(-13,-29,9,6,trim);rect(6,-29,9,6,trim);
+  rect(-6,-25,12,2,'#d5ac80');rect(1,-23,2,9,trim);
   rect(-8,-42,17,12,'#cba588');rect(5,-38,3,2,ink);
   rect(-11,-46,22,6,ink);rect(-8,-48,16,6,armor);
   rect(-8,-44,16,2,trim);
   if(general)poly([[-6,-48],[-11,-56],[3,-60],[8,-55],[0,-49]],'#d7735e');
   ctx.translate(11,-20);
-  ctx.rotate(attacking?-.72:.24);
-  rect(-1,-(keeper?21:37),3,34,'#8f684b');
+  ctx.rotate(attacking?-.8:.21);
+  rect(-1,-(keeper?21:6),3,keeper?26:11,'#8f684b');
   if(!keeper){
-    poly([[-3,-35],[0,-45],[4,-36],[1,-32]],'#e2e9d5');
-    rect(-3,-34,7,2,trim);
+    ctx.save();
+    ctx.scale(bladeScale,bladeScale);
+    const w=general?6:3, length=general?42:29;
+    poly([[-w,-5],[-w,-length],[1,-length-8],[w,-length],[w,-5]],'#34485b');
+    poly([[-w+1,-6],[-w+1,-length],[1,-length-6],[w-1,-length],[w-1,-6]],'#cedde0');
+    rect(0,-length,1,length-6,'#f9f2d7');
+    rect(-w-3,-7,w*2+6,3,trim);
+    ctx.restore();
   }
   rect(-3,-3,6,5,'#cfaa83');
   ctx.restore();
 }
 function drawHeavenGuard(guard,c){
   const x=guard.x-c;
-  drawHeavenOfficer(x,guard.y,guard.kind,guard.dir,!!guard.strikeAt);
-  const barY=guard.y-(guard.kind==='general'?67:54);
+  if(guard.kind==='general'){
+    const move=heavenBossMove;
+    if(move?.kind==='charge'&&move.rushing){
+      drawHeavenFire(x,394,34);
+      for(let i=1;i<=5;i++)rect(x-guard.dir*(30+i*13),380+i*5,25,4,'#ffad577a');
+      return;
+    }
+    contactShadow(x,428,60);
+    if(move)glow(x,guard.y-55,85,move.kind==='lightning'?'#b6def576':'#ffc17b66');
+    ctx.save();
+    ctx.translate(x,guard.y);
+    ctx.scale(1.52,1.52);
+    const growth=move?.kind==='slam'?1+1.15*Math.min(1,(t-move.at)/3):1;
+    drawHeavenOfficer(0,0,'general',guard.dir,!!move,growth);
+    ctx.restore();
+    return;
+  }
+  if(guard.castAt)drawHeavenFire(x+guard.dir*14,guard.y-34,8+Math.sin(t*25)*2);
+  drawHeavenOfficer(x,guard.y,guard.kind,guard.dir,!!(guard.strikeAt||guard.castAt));
+  const barY=guard.y-54;
   rect(x-15,barY,30,3,'#494a4d');
-  rect(x-15,barY,30*guard.hp/guard.maxHp,3,'#cf7969');
+  rect(x-15,barY,30*guard.hp/guard.maxHp,3,guard.kind==='thunder'?'#a4cde3':'#ed966d');
   if(guard.strikeAt)drawBodhiLabel('！',x,barY-7);
+}
+function drawHeavenFire(x,y,r){
+  glow(x,y,r*2,'#ff9d565f');
+  const wave=Math.sin(t*30+x)*r*.18;
+  poly([[x-r,y-4],[x-r*.6,y-r],[x+r*.34,y-r-wave],[x+r,y-r*.18],
+    [x+r*.73,y+r*.7],[x+r*.1,y+r],[x-r*.68,y+r*.61]],'#e36a47');
+  poly([[x-r*.63,y-2],[x-r*.29,y-r*.68],[x+r*.42,y-r*.56],
+    [x+r*.72,y+r*.15],[x+r*.24,y+r*.64],[x-r*.45,y+r*.39]],'#ffb65e');
+  rect(x-r*.24,y-r*.2,r*.53,r*.43,'#ffe6a5');
+}
+function drawHeavenHazards(c){
+  const move=heavenBossMove;
+  const alpha=.15+.12*Math.sin(t*11);
+  if(move?.kind==='lightning'){
+    for(const x of move.columns){
+      rect(x-c-24,138,48,290,`rgba(147,209,242,${alpha})`);
+      rect(x-c-24,425,48,4,'#bbebfa');
+      rect(x-c-1,138,2,273,'#def4ee72');
+    }
+  }
+  if(move?.kind==='charge'&&!move.rushing){
+    const x=Math.min(move.from,move.target)-c;
+    rect(x,418,Math.abs(move.from-move.target),8,`rgba(255,139,69,${alpha+.17})`);
+  }
+  if(move?.kind==='slam'){
+    rect(move.target-c-79,409,158,19,`rgba(251,113,75,${alpha+.15})`);
+    rect(move.target-c-79,425,158,4,'#ffc072');
+  }
+  for(const shot of heavenFireballs)drawHeavenFire(shot.x-c,shot.y,10);
+  for(const bolt of heavenBolts){
+    const x=bolt.x-c;
+    const zig=[[x-12,0],[x+5,111],[x-9,174],[x+17,241],[x-4,319],[x+2,426]];
+    poly([...zig,...zig.slice().reverse().map(([a,b])=>[a+6,b])],'#b9e8fd');
+    poly([...zig,...zig.slice().reverse().map(([a,b])=>[a+2,b])],'#ffffe5');
+    glow(x,416,68,'#a1dfff65');
+  }
 }
 function drawFourthCave(c){
   rect(0,0,W,H,lightGradient(0,0,0,H,[[0,'#203a34'],[.73,'#52715b'],[1,'#2f493c']]));
@@ -3076,7 +3237,15 @@ function drawFourthCave(c){
     rect(x+19,43,6,54+i%3*15,'#456051');
   }
   glow(628-c,304,162,'#f4dd9555');
-  rect(0,432,W,108,'#3f5541');rect(0,432,W,5,'#829072');
+  for(let i=0;i<4;i++){
+    const x=72+i*241-c;
+    poly([[x-55,432],[x-48,296],[x-20,249],[x+39,249],[x+63,298],[x+71,432]],'#30483d');
+    poly([[x-46,432],[x-38,302],[x-12,261],[x+31,261],[x+52,302],[x+59,432]],'#385548');
+    rect(x-46,306,12,94,'#506953');
+    lightShaft(x+27,252,180,48,'#dbe6b428');
+  }
+  rect(0,432,W,108,lightGradient(0,432,0,H,[[0,'#4a6149'],[1,'#293d35']]));
+  rect(0,432,W,5,'#829072');
   for(let i=0;i<18;i++)rect(i*57-c,457+(i%3)*20,40,4,'#52674d');
   drawThirdThrone(755-c,432,'#59695c','#99a283');
   for(let i=0;i<4;i++)monkey(467+i*44-c,402,i%2?-1:1,false,.8);
@@ -3103,4 +3272,127 @@ function drawFourthCave(c){
     rect(752-c,242,88,43,'#a34d45');
     drawBodhiLabel('齐天大圣',796-c,268);
   }
+}
+
+function heavenPlayerHit(damage){
+  if(t<immuneUntil||health<=0)return false;
+  hurtPlayer(damage,true);
+  immuneUntil=t+.7;
+  noiseHit(.19,.24,860,115);
+  return true;
+}
+function strikeHeavenLightning(columns){
+  for(const x of columns){
+    heavenBolts.push({x,at:t});
+    scatter(x,player.y+player.h-4,18,['#fff5cf','#a2ddfb','#7096d2'],100);
+  }
+  noiseHit(.26,.35,4600,260);
+  chirp(180,60,.17,0,.13);
+}
+function updateHeavenFireballs(dt){
+  const px=player.x+12, py=player.y+player.h/2;
+  for(const guard of heavenGuards){
+    if(guard.kind!=='flame'||guard.hp<=0)continue;
+    if(guard.castAt){
+      if(t<guard.castAt)continue;
+      guard.castAt=0;
+      guard.spellReadyAt=t+1.85;
+      if(transformedForm?.id==='fly')continue;
+      const dx=px-guard.x,dy=py-(guard.y-29),distance=Math.hypot(dx,dy)||1;
+      heavenFireballs.push({x:guard.x,y:guard.y-29,vx:dx/distance*290,vy:dy/distance*290,until:t+2.2});
+      chirp(540,170,.21,0,.075);
+    }else if(guard.ground&&!guard.strikeAt&&t>=guard.spellReadyAt&&transformedForm?.id!=='fly'
+        &&Math.abs(px-guard.x)>82&&Math.abs(px-guard.x)<=310&&Math.abs(py-guard.y+29)<160){
+      guard.castAt=t+.48;
+      guard.dir=Math.sign(px-guard.x);
+    }
+  }
+  heavenFireballs=heavenFireballs.filter(shot=>{
+    shot.x+=shot.vx*dt;
+    shot.y+=shot.vy*dt;
+    if(Math.abs(shot.x-px)<=17&&Math.abs(shot.y-py)<=22){
+      heavenPlayerHit(20);
+      scatter(shot.x,shot.y,14,['#ffbb67','#f18051'],76);
+      return false;
+    }
+    return t<shot.until;
+  });
+  heavenBolts=heavenBolts.filter(bolt=>t-bolt.at<.32);
+}
+function updateHeavenBoss(dt){
+  const boss=heavenGuards.at(-1);
+  const px=player.x+12;
+  const active=boss.hp>0&&px>=HEAVEN_ARENA_LEFT-48;
+  $('heavenBossHud').hidden=!active;
+  const warning=$('heavenWarning');
+  if(!active){
+    warning.hidden=true;
+    if(heavenBossMove)boss.y=428;
+    heavenBossMove=null;
+    return;
+  }
+  $('heavenBossMeter').value=boss.hp;
+  $('heavenBossValue').textContent=boss.hp+' / '+boss.maxHp;
+  if(!heavenBossMove){
+    const gap=px-boss.x;
+    boss.dir=Math.sign(gap)||boss.dir;
+    if(Math.abs(gap)>85)boss.x=Math.max(HEAVEN_ARENA_LEFT+26,Math.min(HEAVEN_ARENA_RIGHT-25,boss.x+boss.dir*72*dt));
+    if(t<heavenBossReady||transformedForm?.id==='fly'){warning.hidden=true;return;}
+    const kind=['charge','lightning','slam'][heavenBossTurn++%3];
+    const target=Math.max(HEAVEN_ARENA_LEFT+22,Math.min(HEAVEN_ARENA_RIGHT-24,px));
+    const move={kind,at:t,ends:t+(kind==='charge'?.64:3),target,from:boss.x,dir:boss.dir};
+    if(kind==='lightning'){
+      const middle=Math.max(HEAVEN_ARENA_LEFT+90,Math.min(HEAVEN_ARENA_RIGHT-90,target));
+      move.columns=[middle-82,middle,middle+82];
+    }
+    heavenBossMove=move;
+  }
+  const move=heavenBossMove;
+  if(move.kind==='charge'&&move.rushing){
+    warning.hidden=true;
+    boss.x=Math.max(HEAVEN_ARENA_LEFT+24,Math.min(HEAVEN_ARENA_RIGHT-24,boss.x+move.dir*580*dt));
+    if(!move.hit&&Math.abs(boss.x-px)<49&&Math.abs(player.y+17-394)<47){
+      move.hit=true;
+      heavenPlayerHit(40);
+    }
+    if(t>=move.ends)finishHeavenBossMove();
+    return;
+  }
+  const left=move.ends-t;
+  const message=move.kind==='charge'?'天将化火 · 跳跃闪避':
+    move.kind==='lightning'?'⚠ 三道天雷 · '+Math.max(1,Math.ceil(left))+' 秒后落下':
+    '⚠ 巨剑蓄力 · '+Math.max(1,Math.ceil(left))+' 秒后砸落';
+  if(warning.textContent!==message)warning.textContent=message;
+  warning.hidden=false;
+  if(move.kind==='slam'){
+    const lift=Math.min(1,(t-move.at)/.48);
+    boss.y=428-Math.sin(lift*Math.PI/2)*72;
+    boss.x=move.from+(move.target-move.from)*lift*.7;
+  }
+  if(left>0)return;
+  if(move.kind==='charge'){
+    move.dir=Math.sign(px-boss.x)||boss.dir;
+    boss.dir=move.dir;
+    move.rushing=true;
+    move.ends=t+.74;
+    warning.hidden=true;
+    noiseHit(.38,.27,1000,200);
+  }else if(move.kind==='lightning'){
+    strikeHeavenLightning(move.columns);
+    if(move.columns.some(x=>Math.abs(x-px)<27))heavenPlayerHit(30);
+    finishHeavenBossMove();
+  }else{
+    boss.x=move.target;
+    boss.y=428;
+    if(Math.abs(move.target-px)<79&&player.y+player.h>375)heavenPlayerHit(50);
+    effectRings.push({x:move.target,y:423,age:0,reach:116,color:'#f6aa6b'});
+    scatter(move.target,422,62,['#ffdc96','#e88860','#f8f2c5'],165);
+    noiseHit(.37,.44,680,85);
+    finishHeavenBossMove();
+  }
+}
+function finishHeavenBossMove(){
+  heavenBossMove=null;
+  heavenBossReady=t+1.25;
+  $('heavenWarning').hidden=true;
 }
