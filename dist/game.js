@@ -1011,10 +1011,16 @@ function drawTransformation(camera){
   ctx.scale(face,1);
   switch(transformedForm.id){
     case 'fly':{
-      const wing=2+Math.round((1+Math.sin(t*44))*2);
-      rect(-7,-wing,7,3,'#c2e1d6');rect(-6,1,6,3,'#a4c6bf');
-      rect(-4,-2,9,5,'#2d393c');rect(2,-3,4,4,'#b26763');
-      rect(-5,3,2,2,'#b6a394');
+      const wing=Math.round(Math.sin(t*42)*3);
+      poly([[-4,0],[-11,-4-wing],[-12,-7-wing],[-6,-7-wing],[1,-2]],'#365460');
+      poly([[-4,-1],[-10,-4-wing],[-10,-6-wing],[-6,-6-wing],[-1,-2]],'#b3dbd5');
+      poly([[-3,0],[-9,4+wing],[-5,6+wing],[2,2]],'#719c9e');
+      rect(-7,-2,10,6,'#262b3c');
+      rect(-6,-2,7,3,'#4f7481');
+      rect(-4,0,1,4,'#354957');
+      rect(-6,3,2,2,'#2d3544');rect(-2,3,2,2,'#2d3544');
+      rect(1,-3,6,6,'#422a38');
+      rect(3,-2,4,4,'#bd5360');rect(4,-2,2,1,'#f3a491');
       break;
     }
     case 'tiger':{
@@ -1027,12 +1033,16 @@ function drawTransformation(camera){
       rect(-21,-12,7,9,'#a96843');rect(16,-12,7,9,'#a96843');
       poly([[-28,-8],[-27,-21],[-20,-30],[-6,-34],[17,-31],[26,-24],[23,-12],[13,-7],[-10,-7]],ink);
       poly([[-26,-11],[-25,-21],[-18,-28],[-6,-31],[17,-29],[23,-22],[21,-13],[11,-10]],orange);
-      rect(-16,-29,29,4,amber);rect(-14,-14,28,5,pale);
+      poly([[-23,-22],[-15,-28],[-5,-30],[15,-28],[22,-23],[9,-24],[-5,-26],[-16,-24]],amber);
+      poly([[-22,-17],[-10,-13],[6,-12],[18,-16],[15,-10],[-12,-9]],pale);
       for(const stripe of [-19,-9,2,13]){
         poly([[stripe,-28],[stripe+5,-29],[stripe+1,-22],[stripe+3,-18],[stripe-2,-21]],ink);
       }
-      rect(-23+stride,-13,9,11,orange);rect(-24+stride,-4,12,4,pale);
-      rect(13-stride,-13,9,11,orange);rect(12-stride,-4,13,4,pale);
+      for(const x of [-23+stride,13-stride]){
+        poly([[x-2,-13],[x+9,-14],[x+7,-7],[x+10,-3],[x+10,0],[x-3,0],[x-3,-5]],ink);
+        rect(x,-13,7,9,orange);rect(x,-10,6,2,ink);
+        rect(x-1,-4,10,3,pale);rect(x+3,-3,1,2,'#af825d');
+      }
       rect(16,-38,7,8,ink);rect(28,-38,7,9,ink);
       rect(18,-36,3,4,'#d98f72');rect(30,-36,3,4,'#d98f72');
       poly([[13,-31],[21,-34],[34,-33],[39,-25],[38,-14],[31,-9],[18,-12],[13,-20]],ink);
@@ -1050,13 +1060,22 @@ function drawTransformation(camera){
     }
     case 'squirrel':{
       const tail=climbingTree?3:Math.round(Math.sin(t*13)*2);
-      poly([[-10,-4],[-22,-8],[-24,-19-tail],[-19,-25-tail],[-13,-22-tail],[-12,-12]],'#ad6945');
-      rect(-17,-21-tail,4,10,'#d1935d');
-      rect(-9,-13,18,11,'#ad6945');rect(4,-18,11,9,'#c38759');
-      rect(5,-22,4,5,'#864f40');rect(11,-16,2,2,'#2e2e30');
-      rect(8,-10,7,4,'#eac497');
       const stride=vx?Math.round(Math.sin(t*24)*3):0;
-      rect(-7+stride,-4,5,4,'#8c543e');rect(5-stride,-4,5,4,'#8c543e');
+      const dark='#512f30', russet='#bf613e', amber='#e98b51', cream='#f1cc97';
+      poly([[-8,-3],[-20,-6],[-28,-14-tail],[-28,-23-tail],[-22,-29-tail],
+        [-14,-28-tail],[-9,-22-tail],[-12,-16-tail],[-15,-13-tail],[-8,-9]],dark);
+      poly([[-9,-6],[-20,-9],[-26,-15-tail],[-26,-22-tail],[-21,-27-tail],
+        [-15,-26-tail],[-11,-22-tail],[-14,-17-tail],[-19,-15-tail],[-15,-11]],russet);
+      poly([[-25,-21-tail],[-21,-26-tail],[-16,-25-tail],[-13,-22-tail],
+        [-19,-23-tail],[-22,-19-tail],[-21,-15-tail]],amber);
+      poly([[-11,-4],[-10,-13],[-4,-17],[5,-15],[9,-8],[8,-2],[-7,-1]],dark);
+      poly([[-9,-5],[-7,-13],[-3,-15],[4,-13],[7,-8],[5,-3],[-5,-3]],russet);
+      poly([[0,-12],[6,-16],[9,-12],[8,-6],[5,-4],[2,-6]],cream);
+      poly([[3,-17],[3,-24],[7,-25],[9,-20],[13,-20],[16,-16],[18,-13],[14,-10],[6,-11]],dark);
+      rect(5,-22,2,4,'#dd986f');rect(6,-18,8,6,amber);
+      rect(11,-14,6,3,cream);rect(11,-17,2,2,dark);rect(12,-17,1,1,'#fff2cc');
+      rect(-8+stride,-4,6,4,dark);rect(5-stride,-4,6,4,dark);
+      rect(-7+stride,-2,5,1,amber);rect(6-stride,-2,4,1,cream);
       break;
     }
   }
@@ -1067,17 +1086,24 @@ function drawCrane(x,y,face){
   ctx.save();
   ctx.translate(Math.round(x),Math.round(y));
   ctx.scale(face,1);
-  const wing=Math.round(Math.sin(t*14)*15);
-  poly([[-10,-3],[-23,-8],[-19,1],[-10,5],[5,4],[12,0],[9,-4]],'#f5eed8');
-  poly([[-12,0],[-24,3],[-28,4],[-29,2],[-15,-3]],'#867866');
-  poly([[4,-2],[12,-7],[18,-9],[23,-7],[23,-4],[16,-4],[9,2]],'#fff9e7');
-  rect(19,-10,4,2,'#b74d37');
-  rect(22,-7,1,1,'#243832');
-  poly([[23,-7],[32,-6],[23,-4]],'#b49255');
-  poly([[-9,1],[-15,wing-12],[-22,wing-16],[-18,wing-6],[-5,wing+3],[4,1]],'#fff9e7');
-  poly([[-15,wing-12],[-22,wing-16],[-21,wing-9],[-16,wing-4],[-13,wing-5]],'#344448');
-  rect(-19,5,9,1,'#aa8b5a');
-  rect(-23,6,8,1,'#aa8b5a');
+  const wing=Math.round(Math.sin(t*14)*13);
+  const farWing=Math.round(Math.sin(t*14-.45)*10);
+  const ink='#313341', shadow='#a5adad', white='#f9efd9';
+  poly([[-9,-4],[-21,farWing-13],[-14,farWing-17],[1,farWing-5],[6,-4]],'#687786');
+  poly([[-9,-2],[-18,farWing-12],[-14,farWing-15],[-1,farWing-6],[5,-3]],'#d9ddd1');
+  poly([[-9,3],[-23,7],[-32,7],[-33,9],[-20,9],[-6,5]],'#805f4c');
+  poly([[-24,-4],[-13,-5],[1,-4],[9,-10],[16,-14],[23,-14],[27,-10],
+    [24,-6],[17,-7],[11,0],[3,6],[-13,7],[-22,3]],ink);
+  poly([[-21,-3],[-10,-3],[2,-2],[10,-8],[16,-12],[23,-12],[25,-10],
+    [22,-8],[17,-9],[10,-1],[2,4],[-11,5],[-19,2]],white);
+  poly([[-17,1],[-6,2],[4,0],[1,4],[-11,5]],shadow);
+  rect(20,-14,5,2,'#b84340');rect(23,-11,1,1,ink);
+  poly([[25,-11],[35,-9],[25,-8]],'#edbe69');
+  poly([[-13,2],[-25,wing-12],[-28,wing-19],[-24,wing-19],[-14,wing-12],
+    [-7,wing-8],[3,0],[-5,6]],ink);
+  poly([[-12,1],[-23,wing-12],[-25,wing-17],[-20,wing-14],[-12,wing-9],
+    [-6,wing-6],[1,0],[-5,4]],white);
+  poly([[-21,wing-11],[-17,wing-9],[-11,wing-4],[-5,1],[-12,0]],shadow);
   ctx.restore();
 }
 
@@ -1963,7 +1989,11 @@ function drawRoyalAudience(hall,c,dragon){
 function drawRoyal(x,y,dragon){
   const robe=dragon?'#457d72':'#765266';
   const trim=dragon?'#d9b36d':'#d4a875';
-  poly([[x-16,y],[x-13,y-24],[x-7,y-29],[x+8,y-29],[x+16,y-23],[x+20,y]],robe);
+  poly([[x-23,y],[x-18,y-22],[x-10,y-31],[x+10,y-31],[x+18,y-23],[x+23,y]],'#272833');
+  poly([[x-21,y-2],[x-16,y-22],[x-9,y-29],[x+9,y-29],[x+16,y-23],[x+21,y-2]],robe);
+  poly([[x+6,y-29],[x+15,y-23],[x+19,y-4],[x+12,y-7],[x+8,y-20]],dragon?'#6ba593':'#9d6b7d');
+  poly([[x-15,y-19],[x-10,y-17],[x-14,y-4],[x-20,y-3]],dragon?'#2e5d60':'#513b57');
+  rect(x-19,y-3,38,2,trim);
   rect(x-15,y-7,33,3,trim);
   rect(x-4,y-27,8,18,dragon?'#79b2a1':'#a47277');
   rect(x-13,y-22,4,12,trim);rect(x+11,y-22,4,12,trim);
@@ -1976,23 +2006,41 @@ function drawRoyal(x,y,dragon){
   rect(x-9,y-44,19,17,dragon?'#c1aa72':'#d5a98a');
   rect(x-6,y-38,3,2,'#302f3a');rect(x+5,y-38,3,2,'#302f3a');
   if(dragon){
-    poly([[x-9,y-46],[x-15,y-56],[x-13,y-63],[x-10,y-53],[x-4,y-47]],trim);
-    poly([[x+7,y-46],[x+14,y-55],[x+13,y-63],[x+18,y-56],[x+12,y-45]],trim);
-    rect(x-12,y-44,5,7,'#748f70');rect(x+9,y-44,5,7,'#748f70');
-    rect(x-6,y-42,4,2,trim);rect(x+4,y-42,5,2,trim);
-    rect(x-5,y-34,18,6,'#d5ba80');
-    rect(x+8,y-33,2,1,'#77604e');
-    rect(x-3,y-28,12,2,'#f1d2a2');
-    poly([[x-4,y-30],[x-10,y-17],[x-7,y-15],[x+2,y-28]],'#e8dfc1');
-    poly([[x+10,y-30],[x+17,y-17],[x+14,y-15],[x+5,y-28]],'#e8dfc1');
+    for(const sign of [-1,1]){
+      poly([[x+sign*7,y-42],[x+sign*17,y-52],[x+sign*17,y-60],[x+sign*13,y-65],
+        [x+sign*12,y-57],[x+sign*6,y-51]],'#a47749');
+      poly([[x+sign*11,y-49],[x+sign*19,y-54],[x+sign*21,y-60],[x+sign*18,y-60],
+        [x+sign*16,y-56],[x+sign*12,y-55]],'#f1cb78');
+      rect(x+sign*13-1,y-60,3,8,trim);
+    }
+    poly([[x-14,y-39],[x-10,y-50],[x+6,y-50],[x+14,y-46],[x+15,y-33],[x+7,y-26],
+      [x-8,y-27],[x-15,y-32]],'#263e43');
+    poly([[x-12,y-40],[x-8,y-48],[x+7,y-48],[x+12,y-44],[x+13,y-34],[x+5,y-29],
+      [x-9,y-30]],'#61968a');
+    rect(x-8,y-44,6,2,trim);rect(x+3,y-44,7,2,'#ffe3a5');
+    rect(x-7,y-41,4,2,'#fff0b1');rect(x+5,y-41,4,2,'#fff0b1');
+    rect(x-5,y-41,1,2,'#26343a');rect(x+7,y-41,1,2,'#26343a');
+    poly([[x-9,y-35],[x-3,y-38],[x+7,y-38],[x+12,y-34],[x+9,y-29],[x-7,y-29]],'#d3b57b');
+    rect(x-5,y-34,2,1,'#64523e');rect(x+7,y-34,2,1,'#64523e');
+    rect(x-4,y-30,13,2,'#754c42');
+    poly([[x-7,y-33],[x-13,y-30],[x-19,y-21],[x-16,y-21],[x-10,y-27],[x-4,y-29]],'#fff0c6');
+    poly([[x+8,y-33],[x+16,y-29],[x+21,y-22],[x+18,y-22],[x+13,y-27],[x+6,y-29]],'#fff0c6');
+    poly([[x-5,y-28],[x+9,y-28],[x+6,y-20],[x+1,y-16],[x-3,y-21]],'#ece0bb');
   }else{
-    rect(x-15,y-49,30,5,'#392c42');
-    rect(x-9,y-54,18,5,'#4d3548');
+    poly([[x-24,y-51],[x-15,y-49],[x-10,y-50],[x-10,y-56],[x+10,y-56],
+      [x+10,y-50],[x+16,y-49],[x+24,y-51],[x+23,y-46],[x+13,y-44],
+      [x-14,y-44],[x-23,y-46]],'#302638');
+    rect(x-8,y-54,16,4,'#695169');
+    rect(x+4,y-54,4,2,'#967183');
     rect(x-13,y-48,26,2,trim);
     rect(x-2,y-54,4,5,'#c17a67');
     rect(x-8,y-41,6,2,'#4c3840');rect(x+3,y-41,6,2,'#4c3840');
     for(let i=0;i<5;i++)rect(x-12+i*6,y-45,1,8,trim);
-    poly([[x-7,y-32],[x+9,y-32],[x+6,y-19],[x+1,y-15],[x-5,y-21]],'#3f3542');
+    poly([[x-9,y-34],[x-4,y-30],[x+4,y-30],[x+10,y-34],[x+9,y-24],[x+3,y-16],
+      [x-4,y-20],[x-8,y-25]],'#302838');
+    rect(x+2,y-28,2,8,'#574052');
+    rect(x-3,y-34,7,2,'#996750');
+    rect(x-17,y-12,7,4,'#d2a480');rect(x+11,y-12,7,4,'#d2a480');
   }
 }
 function drawThirdThrone(x,floor,stone,trim){
@@ -2097,50 +2145,92 @@ function drawDemon(demon,camera){
     drawEnemyHealth(demon,x,y);
     return;
   }
-  poly([[x-12,y-9],[x-10,y-25],[x+8,y-25],[x+12,y-9]],'#735866');
-  rect(x-9,y-15,18,3,'#b18572');rect(x-2,y-16,4,5,'#e0b581');
-  rect(x-10,y-32,20,14,'#997688');
-  rect(x-11,y-38,4,8,'#c49c8e');rect(x+7,y-38,4,8,'#c49c8e');
-  rect(x-6,y-28,3,3,'#ffd478');rect(x+3,y-28,3,3,'#ffd478');
-  if(demon.kind==='pig'){
-    rect(x-13,y-31,5,8,'#bc8c8c');rect(x+8,y-31,5,8,'#bc8c8c');
-    rect(x-7,y-25,14,8,'#d49f9d');
-    rect(x-4,y-22,2,2,'#724a59');rect(x+2,y-22,2,2,'#724a59');
-  }else rect(x-5,y-22,11,2,'#533e51');
-  rect(x-4,y-21,2,4,'#e7c9a1');rect(x+3,y-21,2,4,'#e7c9a1');
-  rect(x-8,y-6,6,6,'#514353');rect(x+3,y-6,6,6,'#514353');
-  ctx.save();ctx.translate(x+10*demon.dir,y-16);ctx.scale(demon.dir,1);
+  const pig=demon.kind==='pig';
+  const stride=demon.ground&&!demon.strikeAt?Math.round(Math.sin(t*12+x*.11)*3):0;
+  const ink='#382b3b', hide=pig?'#ab696c':'#855e97';
+  const light=pig?'#df9b88':'#b289b8', armor=pig?'#904d45':'#554965';
+  ctx.save();
+  ctx.translate(Math.round(x),Math.round(y));
+  ctx.scale(demon.dir,1);
+  for(const [leg,step] of [[-9,stride],[4,-stride]]){
+    rect(leg+step,-10,8,10,ink);
+    rect(leg+step+1,-9,6,6,armor);
+    rect(leg+step+1,-3,7,2,pig?'#c58b66':'#96718a');
+  }
+  const shoulder=pig?17:13;
+  poly([[-shoulder,-8],[-shoulder,-24],[-8,-30],[10,-30],[shoulder,-21],
+    [shoulder,-8]],ink);
+  poly([[-shoulder+2,-10],[-shoulder+2,-23],[-8,-28],[9,-28],[shoulder-2,-21],
+    [shoulder-2,-10]],armor);
+  rect(-shoulder+2,-25,9,6,hide);
+  rect(shoulder-8,-24,8,6,light);
+  rect(-shoulder+3,-14,shoulder*2-6,3,'#b88764');
+  rect(-2,-15,5,5,'#e1b67a');rect(0,-14,1,2,ink);
+  if(pig){
+    poly([[-15,-26],[-15,-35],[-8,-40],[7,-40],[14,-35],[18,-31],[17,-23],[5,-21],
+      [-9,-23]],ink);
+    rect(-13,-34,7,7,hide);rect(-10,-35,19,10,hide);rect(-5,-37,13,3,light);
+    rect(8,-34,8,10,light);rect(10,-31,7,5,'#e6aa98');
+    rect(12,-30,1,2,'#814754');rect(15,-30,1,2,'#814754');
+    rect(6,-34,3,2,'#fff0b7');rect(8,-34,1,2,ink);
+    poly([[8,-24],[12,-24],[14,-29],[14,-24],[11,-21]],'#fff0c8');
+  }else{
+    poly([[-12,-26],[-12,-34],[-9,-39],[-11,-43],[-6,-42],[-4,-37],
+      [4,-37],[7,-43],[10,-44],[10,-37],[13,-33],[13,-25],[7,-21],[-7,-23]],ink);
+    poly([[-9,-27],[-10,-34],[-5,-36],[5,-36],[11,-32],[11,-26],[6,-23],[-6,-25]],hide);
+    rect(-9,-41,2,5,'#d4bd9c');rect(7,-41,2,5,'#f0d1a0');
+    rect(-5,-35,12,2,light);
+    rect(-3,-31,3,2,'#ffc970');rect(6,-31,3,2,'#ffe0a3');
+    rect(3,-27,7,3,'#493041');rect(5,-27,1,2,'#f5d7a8');rect(8,-27,1,2,'#f5d7a8');
+  }
+  ctx.translate(shoulder-2,-16);
   ctx.rotate(demon.strikeAt?-.95:demon.readyAt-t>.68?.95:Math.sin(t*8)*.25);
-  rect(0,-2,21,4,'#8e6658');
-  rect(13,-5,11,10,'#b4866f');
-  for(let i=0;i<4;i++)rect(13+i*3,-8,2,4,'#d7ad85');
+  rect(-3,-2,24,4,'#543c39');
+  rect(-1,-2,20,2,'#936a54');
+  poly([[12,-6],[23,-6],[26,-3],[26,4],[23,7],[12,6]],ink);
+  rect(14,-5,10,9,pig?'#827783':'#a5765e');
+  for(let i=0;i<4;i++)rect(13+i*3,-8,2,4,pig?'#e9d0a4':'#e2af82');
+  rect(15,0,2,2,'#e7bb91');rect(21,2,2,2,'#e7bb91');
+  rect(-4,-4,7,7,hide);rect(-3,-4,5,2,light);
   ctx.restore();
   drawEnemyHealth(demon,x,y);
 }
 function drawEnemyHealth(demon,x,y){
+  const barY=y-(demon.kind==='ghost'?49:46);
   if(t<(demon.fearUntil??0)){
     ctx.fillStyle='#f6dc9e';
     ctx.font='bold 11px sans-serif';
-    ctx.fillText('!',x-2,y-51);
+    ctx.fillText('!',x-2,barY-6);
   }
-  rect(x-11,y-45,22,3,'#47313d');
-  rect(x-11,y-45,22*demon.hp/demon.maxHp,3,'#cf7969');
+  rect(x-11,barY,22,3,'#47313d');
+  rect(x-11,barY,22*demon.hp/demon.maxHp,3,'#cf7969');
 }
 function drawSeaGuard(demon,x,y){
   const shrimp=demon.kind==='shrimp';
   ctx.save();
   ctx.translate(x,y);
   ctx.scale(demon.dir,1);
-  poly([[-15,-10],[-12,-24],[9,-25],[15,-18],[13,-8]],shrimp?'#b86f58':'#ae584d');
-  rect(-10,-28,22,11,shrimp?'#df8d69':'#d67a61');
-  rect(5,-25,3,3,'#302a32');rect(-4,-25,3,3,'#302a32');
+  const ink='#4a2c37', shell=shrimp?'#ca7157':'#b7534c', shine=shrimp?'#f9b785':'#ee9575';
+  const stride=demon.ground&&!demon.strikeAt?Math.round(Math.sin(t*13+x*.12)*3):0;
   for(let i=0;i<4;i++){
-    rect(-13+i*7,-7,4,7,'#a65d52');
-    rect(-13+i*7,-10,4,3,'#e49870');
+    const root=-13+i*7;
+    const foot=root+(i<2?-6:4)+(i%2?stride:-stride);
+    poly([[root,-11],[root+4,-9],[foot+4,-4],[foot+3,0],[foot,0],[foot,-3],[root,-7]],ink);
+    rect(foot+1,-4,2,3,shell);
   }
+  poly([[-17,-11],[-14,-23],[-5,-28],[8,-28],[15,-24],[18,-17],[14,-8],[-12,-7]],ink);
+  poly([[-15,-11],[-12,-22],[-5,-26],[8,-26],[13,-23],[16,-17],[12,-10],[-11,-9]],shell);
+  rect(-8,-25,14,2,shine);
+  poly([[-10,-14],[-5,-17],[9,-17],[13,-13],[10,-10],[-8,-10]],'#d59b74');
+  rect(-6,-22,4,4,ink);rect(6,-22,4,4,ink);
+  rect(-4,-22,2,2,'#fff0c7');rect(8,-22,2,2,'#fff0c7');
   if(shrimp){
-    rect(-16,-19,8,6,'#e89b74');
-    rect(-11,-36,3,10,'#ecb18a');rect(4,-35,3,8,'#ecb18a');
+    poly([[-9,-21],[-19,-20],[-24,-15],[-22,-8],[-16,-9],[-12,-14]],ink);
+    poly([[-10,-20],[-18,-18],[-22,-15],[-21,-10],[-17,-11],[-13,-16]],shell);
+    rect(-19,-17,2,5,shine);rect(-16,-19,2,4,'#a94d4d');
+    poly([[0,-26],[-2,-32],[-7,-35],[-13,-35],[-13,-37],[-6,-37],[1,-33],[3,-26]],shine);
+    poly([[8,-26],[10,-33],[7,-37],[2,-39],[3,-41],[10,-38],[13,-33],[11,-26]],'#df956d');
+    rect(-1,-18,4,7,'#48746e');rect(0,-17,2,5,'#b7b07e');
     ctx.translate(8,-16);
     const charging=demon.strikeAt&&demon.strikeAt-t<=.15;
     if(charging){
@@ -2152,13 +2242,26 @@ function drawSeaGuard(demon,x,y){
       ctx.globalAlpha=1;
     }
     ctx.rotate(demon.strikeAt&&!charging?-.28:0);
-    rect(-16,-1,43,3,'#a2835f');
-    poly([[25,-5],[35,0],[25,5]],'#d1dec9');
+    rect(-16,-2,43,4,ink);
+    rect(-15,-2,42,2,'#be9966');
+    rect(22,-3,5,6,'#c29a68');
+    poly([[26,-6],[39,0],[26,6]],'#53696e');
+    poly([[26,-5],[37,0],[26,2]],'#dce6d2');
+    rect(-3,-3,6,7,shell);rect(-2,-3,4,2,shine);
   }else{
-    const claw=demon.strikeAt?-6:0;
-    rect(-20,-17,12,7,'#bd6556');rect(9,-18,12,7,'#bd6556');
-    rect(16,-24+claw,12,11,'#e39074');
-    rect(24,-26+claw,7,4,'#f0a685');rect(25,-17+claw,6,4,'#f0a685');
+    for(const sign of [-1,1]){
+      const raised=sign===1&&demon.strikeAt?6:0;
+      ctx.save();
+      ctx.scale(sign,1);
+      rect(10,-18,12,7,ink);rect(11,-17,9,4,shell);
+      ctx.translate(18,-16-raised);
+      poly([[-1,3],[-4,-5],[1,-13],[8,-16],[13,-15],[14,-11],[8,-8],[6,-5],
+        [10,-4],[15,-8],[16,-2],[11,4],[4,6]],ink);
+      poly([[0,2],[-2,-5],[2,-12],[8,-14],[12,-13],[12,-12],[6,-8],[4,-5],
+        [9,-2],[14,-5],[14,-2],[10,2],[4,4]],shell);
+      rect(5,-13,6,2,shine);rect(8,0,4,2,shine);
+      ctx.restore();
+    }
   }
   ctx.restore();
 }
