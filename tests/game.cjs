@@ -102,6 +102,12 @@ function castWithRoll(roll){
   Math.random=()=>roll;
   try{castTransform();}finally{Math.random=random;}
 }
+for(const [roll,id] of [[0,'crane'],[.249999,'crane'],[.25,'fly'],[.499999,'fly'],[.5,'tiger'],[.749999,'tiger'],[.75,'squirrel'],[.999999,'squirrel']]){
+  energy=10;
+  castWithRoll(roll);
+  if(transformedForm?.id!==id)throw Error('Four equally sized transformation intervals');
+  clearTransformation();
+}
 energy=10;castWithRoll(.01);if(transformedForm?.id!=='crane'||energy!==8||!transformedUntil)throw Error('Spell cost');
 const beforeY=player.y;keys.add('ArrowUp');update(1/60);keys.clear();
 if(player.y>=beforeY||Math.abs(transformedUntil-t-10)>.001)throw Error('Crane flight controls or duration');
