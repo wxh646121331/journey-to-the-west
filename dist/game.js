@@ -25,7 +25,7 @@ function placePlayerOnGround(route,x){
   Object.assign(player,{x:safeX,y:floor.y-player.h,vx:0,vy:0,ground:true});
   jumpRequestedUntil=-1;
 }
-function reset(){slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
+function reset(){clearTransformation();slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false){activeQuiz={...q,final};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
@@ -136,7 +136,8 @@ $('stage').addEventListener('click',e=>{if(e.target.closest('button'))return;adv
 window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.key===' ')e.preventDefault();if(e.repeat)return;if(mode==='book'&&!paused&&['ArrowLeft','ArrowRight'].includes(e.code)){flipBook(e.code==='ArrowLeft'?-1:1);return;}if(e.code==='Escape'){pause();return;}if(paused)return;if((e.code==='Space'||e.key===' ')&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'||e.key===' '||e.key==='ArrowUp'||e.key?.toLowerCase()==='w')jump();if(e.code==='KeyE')interact();if(e.code==='KeyF')castTransform();if(e.code==='KeyA')swingStaff();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end','gameover'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end','gameover'].includes(mode))pause();});
 document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();if(b.hasPointerCapture&&!b.hasPointerCapture(e.pointerId)){try{b.setPointerCapture(e.pointerId);}catch{}}keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();if(b.dataset.key==='KeyF')castTransform();if(b.dataset.key==='KeyA')swingStaff();});if(b.dataset.key==='Space')b.addEventListener('click',e=>{if(e.detail===0)jump();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
 function jump(){
-  if(mode!=='play'||paused||slamActive)return;
+  if(mode!=='play'||paused||slamActive||transformedForm?.flight)return;
+  if(transformedForm?.id==='squirrel'&&nearClimbTree())return;
   jumpRequestedUntil=t+.18;
   applyJumpRequest();
 }
@@ -411,6 +412,26 @@ function frame(now){const dt=Math.min(.032,(now-last)/1000||.016);last=now;if(!p
 
 let stamina=100, flightTrialDone=false, ambienceAt=0;
 let chapter=1, region='cave', energy=0, learned=false, transformedUntil=0, voyageTime=0, dockWait=0;
+const forms=[
+  {id:'crane',name:'飞鹤',flight:true,speed:315,vertical:200,hint:'方向键高速飞行，触屏用跳跃键上升、▼ 下降。敌人仍会发现你。'},
+  {id:'fly',name:'苍蝇',flight:true,speed:110,vertical:90,hint:'方向键慢速飞行，触屏用跳跃键上升、▼ 下降。敌人会忽略你。'},
+  {id:'tiger',name:'老虎',speed:230,hint:'靠近敌人可以吓退它们。'},
+  {id:'squirrel',name:'松鼠',speed:345,hint:'快速移动，靠近树干按 ↑ 或空格爬树。'}
+];
+let transformedForm=null, climbingTree=null;
+const climbTrees={
+  shore:[{x:284,y:442},{x:540,y:411},{x:901,y:415},{x:1152,y:386},{x:1666,y:400}],
+  mountain:[{x:191,y:434},{x:500,y:434},{x:708,y:404},{x:930,y:434},{x:1280,y:434}]
+};
+function currentClimbTrees(){
+  if(chapter===2&&region==='shore')return climbTrees.shore;
+  if(chapter===3&&thirdScene==='mountain')return climbTrees.mountain;
+  return [];
+}
+function nearClimbTree(){
+  return currentClimbTrees().find(trunk=>Math.abs(player.x+12-trunk.x)<=24&&
+    player.y+player.h>=trunk.y-121&&player.y+player.h<=trunk.y+5);
+}
 const secondRoutes={
   cave:[
     {x:-70,y:432,w:690},{x:650,y:425,w:145},{x:835,y:389,w:140},
@@ -532,6 +553,7 @@ function arriveAcrossSea(){
   ],()=>openSecondRoute('拜见菩提祖师'));
 }
 function interactChapterTwo(){
+  if(transformedForm){toast('恢复原形后即可互动。');return;}
   if(region!=='shore'||player.x<1680)return;
   if(learned){toast('按 F 或点击「变化」施法，消耗 2 点元气。');return;}
   chapterTwoDialogue([
@@ -551,14 +573,14 @@ function castTransform(){
   energy-=2;
   renderEnergy();
   transformedUntil=t+10;
-  $('flightDown').hidden=false;
-  $('hint').textContent='方向键自由飞行。触屏可用左右键、跳跃键上升、▼ 下降。';
-  player.vy=-160;
-  player.ground=false;
+  transformedForm=forms[Math.floor(Math.random()*forms.length)];
+  $('flightDown').hidden=!transformedForm.flight&&transformedForm.id!=='squirrel';
+  $('hint').textContent=transformedForm.hint;
+  if(transformedForm.flight){player.vy=0;player.ground=false;}
   scatter(player.x+12,player.y+15,42,['#fff0af','#efb767','#c4e3ac'],115);
   chirp(370,720,.35,0,.09,'triangle');
   if(chapter===2)chapterTwoSave();else saveChapterThree();
-  toast('七十二变 · 化作飞鹤');
+  toast('七十二变 · 化作'+transformedForm.name);
 }
 function updateChapterTwo(dt){
   if(mode==='voyage'){
@@ -570,7 +592,7 @@ function updateChapterTwo(dt){
   const p=player;
   const route=secondRoutes[region];
   if(region==='shore')moveShoreLifts();
-  if(updateFlight(dt,route))return;
+  if(updateTransformation(dt,route))return;
   updateRun(dt);
   moveOnPlatforms(route,dt);
   if(p.y>590){fallAndRespawn(route);if(mode!=='play')return;}
@@ -655,19 +677,24 @@ function updateRun(dt){
   const right=keys.has('ArrowRight')||keys.has('KeyD');
   const left=keys.has('ArrowLeft')||(chapter!==3&&keys.has('KeyA'));
   const direction=Number(right)-Number(left);
-  const sprint=direction!==0&&keys.has('KeyZ')&&stamina>=27*dt;
+  const sprint=!transformedForm&&direction!==0&&keys.has('KeyZ')&&stamina>=27*dt;
   stamina=Math.max(0,Math.min(100,stamina+(sprint?-27:(!direction||!keys.has('KeyZ')?19:0))*dt));
-  player.vx=direction*(sprint?326:205);
+  player.vx=direction*(transformedForm?.speed??(sprint?326:205));
   if(direction)player.face=direction;
   renderStamina();
 }
-function updateFlight(dt,route){
-  if(!transformedUntil)return false;
+function clearTransformation(){
+  transformedUntil=0;
+  transformedForm=null;
+  climbingTree=null;
+  $('flightDown').hidden=true;
+}
+function updateTransformation(dt,route){
+  if(!transformedForm)return false;
   if(t>=transformedUntil){
-    transformedUntil=0;
-    $('flightDown').hidden=true;
+    clearTransformation();
     $('counts').textContent=chapter===3&&hasStaff?'如意金箍棒':'';
-    $('hint').textContent='F 施展七十二变，长按 Z 加速跑。';
+    $('hint').textContent='F 随机变化，长按 Z 加速跑。';
     if(chapter===2&&!flightTrialDone){
       flightTrialDone=true;
       finishChapterTwo();
@@ -675,14 +702,27 @@ function updateFlight(dt,route){
     }
     return false;
   }
+  $('counts').textContent=transformedForm.name+' '+Math.ceil(transformedUntil-t)+' 秒';
   const direction=Number(keys.has('ArrowRight')||keys.has('KeyD'))-Number(keys.has('ArrowLeft')||(chapter!==3&&keys.has('KeyA')));
-  if(direction)player.face=direction;
   const climb=keys.has('ArrowUp')||keys.has('KeyW')||keys.has('Space');
   const descend=keys.has('ArrowDown')||keys.has('KeyS');
-  player.x=Math.max(0,Math.min(route.at(-1).x+route.at(-1).w-24,player.x+direction*225*dt));
-  player.y=Math.max(62,Math.min(350,player.y+(Number(descend)-Number(climb))*145*dt));
+  if(transformedForm.flight){
+    if(direction)player.face=direction;
+    player.x=Math.max(0,Math.min(route.at(-1).x+route.at(-1).w-24,player.x+direction*transformedForm.speed*dt));
+    player.y=Math.max(62,Math.min(350,player.y+(Number(descend)-Number(climb))*transformedForm.vertical*dt));
+  }else if(transformedForm.id==='squirrel'&&!direction&&(climbingTree||(climb&&nearClimbTree()))){
+    climbingTree ||= nearClimbTree();
+    player.x=climbingTree.x-12;
+    const bottom=climbingTree.y-player.h;
+    player.y=Math.min(bottom,Math.max(bottom-115,player.y+(Number(descend)-Number(climb))*185*dt));
+    player.vy=0;
+    player.ground=player.y===bottom;
+    if(player.ground)climbingTree=null;
+  }else{
+    climbingTree=null;
+    return false;
+  }
   cam+=(Math.max(0,Math.min(route.at(-1).x+route.at(-1).w-W,player.x-315))-cam)*Math.min(1,dt*7);
-  $('counts').textContent='飞行 '+Math.ceil(transformedUntil-t)+' 秒';
   return true;
 }
 function moveOnPlatforms(route,dt,limit=Infinity){
@@ -799,14 +839,17 @@ function drawChapterTwo(){
     }
     for(let i=8;i<floor.w;i+=24)rect(x+i,floor.y+17+i%13,9,3,'#607451');
   }
-  if(region==='shore')drawShoreTraps(c);
+  if(region==='shore'){
+    for(const trunk of climbTrees.shore)tree(trunk.x-c,trunk.y,1.1);
+    drawShoreTraps(c);
+  }
   secondPeaches[region].forEach(([baseX,y],i)=>{
     const lift=region==='shore'&&(i===2?shoreLifts[0]:i===5?shoreLifts[1]:null);
     const x=lift?lift.x+baseX:baseX;
     if(!collected.has(region+i))peach(x-c,y);
   });
-  if(t<transformedUntil){
-    drawCrane(player.x+12-c,player.y+15,player.face);
+  if(transformedForm){
+    drawTransformation(c);
   }else{
     monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx);
   }
@@ -820,6 +863,48 @@ function drawChapterTwo(){
     ctx.font='14px sans-serif';
     ctx.fillText(learned?'[ F ] 七十二变':'[ E ] 拜见菩提祖师',1680-c,318);
   }
+}
+
+function drawTransformation(camera){
+  const {x,y,face,vx}=player;
+  if(transformedForm.id==='crane'){
+    drawCrane(x+12-camera,y+15,face);
+    return;
+  }
+  ctx.save();
+  ctx.translate(Math.round(x+12-camera),Math.round(y+(transformedForm.flight?15:34)));
+  ctx.scale(face,1);
+  switch(transformedForm.id){
+    case 'fly':{
+      const wing=2+Math.round((1+Math.sin(t*44))*2);
+      rect(-7,-wing,7,3,'#c2e1d6');rect(-6,1,6,3,'#a4c6bf');
+      rect(-4,-2,9,5,'#2d393c');rect(2,-3,4,4,'#b26763');
+      rect(-5,3,2,2,'#b6a394');
+      break;
+    }
+    case 'tiger':{
+      poly([[-17,-8],[-27,-16],[-27,-19],[-23,-19],[-20,-13],[-12,-11]],'#d98b45');
+      rect(-17,-17,33,12,'#d98b45');rect(9,-23,15,16,'#e4a458');
+      rect(10,-26,5,5,'#493a34');rect(19,-26,4,5,'#493a34');
+      for(let i=0;i<3;i++)rect(-12+i*8,-17,3,8,'#564139');
+      rect(15,-19,3,2,'#332e29');rect(18,-12,7,4,'#efd5a0');
+      const stride=vx?Math.round(Math.sin(t*19)*4):0;
+      rect(-14+stride,-7,6,7,'#ad693c');rect(9-stride,-7,6,7,'#ad693c');
+      break;
+    }
+    case 'squirrel':{
+      const tail=climbingTree?3:Math.round(Math.sin(t*13)*2);
+      poly([[-10,-4],[-22,-8],[-24,-19-tail],[-19,-25-tail],[-13,-22-tail],[-12,-12]],'#ad6945');
+      rect(-17,-21-tail,4,10,'#d1935d');
+      rect(-9,-13,18,11,'#ad6945');rect(4,-18,11,9,'#c38759');
+      rect(5,-22,4,5,'#864f40');rect(11,-16,2,2,'#2e2e30');
+      rect(8,-10,7,4,'#eac497');
+      const stride=vx?Math.round(Math.sin(t*24)*3):0;
+      rect(-7+stride,-4,5,4,'#8c543e');rect(5-stride,-4,5,4,'#8c543e');
+      break;
+    }
+  }
+  ctx.restore();
 }
 
 function drawCrane(x,y,face){
@@ -985,6 +1070,10 @@ function hurtPlayer(amount,combat=false){
   refreshHealth();
 }
 function respawnPlayer(route){
+  if(transformedForm){
+    clearTransformation();
+    $('counts').textContent=chapter===3&&hasStaff?'如意金箍棒':'';
+  }
   placePlayerOnGround(route,checkpoint);
   const maxCam=chapter===1?2540:chapter===2?1010:930;
   cam=Math.max(0,Math.min(maxCam,player.x-315));
@@ -1279,8 +1368,20 @@ function updateDemons(dt){
   for(const demon of demons){
     if(demon.hp<=0)continue;
     const gap=player.x+12-demon.x;
-    const sameHeight=Math.abs(player.y+34-demon.y)<36;
-    if(Math.abs(gap)<155&&Math.abs(player.y+34-demon.y)<75)demon.aggro=true;
+    const heightGap=Math.abs(player.y+34-demon.y);
+    const sameHeight=heightGap<36;
+    const invisible=transformedForm?.id==='fly';
+    if(transformedForm?.id==='tiger'&&Math.abs(gap)<145&&heightGap<65){
+      demon.fearUntil=t+.9;
+      demon.fearDirection=-Math.sign(gap)||-demon.dir;
+    }
+    const fleeing=t<(demon.fearUntil??0);
+    if(invisible||fleeing){
+      demon.aggro=false;
+      demon.strikeAt=0;
+    }else if(Math.abs(gap)<155&&heightGap<(transformedForm?.id==='crane'?140:75)){
+      demon.aggro=true;
+    }
     if(demon.kind==='shrimp'&&demon.strikeAt&&demon.strikeAt-t<=.15){
       const floor=route.find(f=>demon.x>=f.x&&demon.x<f.x+f.w);
       const thrust=Math.max(0,Math.min(320*dt,gap*demon.dir-11));
@@ -1324,13 +1425,16 @@ function updateDemons(dt){
           demon.landing=next.x+next.w/2;
         }
       }
+    }else if(fleeing){
+      demon.dir=demon.fearDirection;
     }else if(!demon.aggro&&(demon.x<=demon.min||demon.x>=demon.max)){
       demon.dir=demon.x<=demon.min?1:-1;
     }
     if(!demon.strikeAt){
-      const target=demon.landing??(demon.aggro?player.x+12:(demon.dir>0?demon.max:demon.min));
+      const target=demon.landing??(fleeing?demon.x+demon.dir*100:demon.aggro?player.x+12:demon.dir>0?demon.max:demon.min);
       const distance=target-demon.x;
-      demon.x+=Math.sign(distance)*Math.min(Math.abs(distance),(demon.landing!==null?186:demon.aggro?demon.speed:65)*dt);
+      const speed=demon.landing!==null?186:fleeing?164:demon.aggro?demon.speed:65;
+      demon.x+=Math.sign(distance)*Math.min(Math.abs(distance),speed*dt);
       if(demon.ground&&index>=0){
         const floor=route[index];
         demon.x=Math.max(floor.x+2,Math.min(floor.x+floor.w-2,demon.x));
@@ -1369,11 +1473,11 @@ function updateChapterThree(dt){
   const route=currentThirdRoute();
   const hall=royalHalls[thirdScene];
   const doorLimit=hall&&awaitingHallEntry()?hall.door-player.w:Infinity;
-  if(updateFlight(dt,route)){
+  if(updateTransformation(dt,route)){
     player.x=Math.max(hallEntered?hall.door-24:0,Math.min(player.x,doorLimit));
     if(thirdScene==='palace'&&!dragonSpoken)player.x=Math.min(player.x,1020);
     if(thirdCombatActive())updateDemons(dt);
-    if(health===0){transformedUntil=0;$('flightDown').hidden=true;loseLife(route);}
+    if(health===0){clearTransformation();loseLife(route);}
     return;
   }
   const charging=slamActive&&t-swingAt<SLAM_WINDUP;
@@ -1494,6 +1598,7 @@ function drawChapterThree(){
     for(let i=12;i<floor.w;i+=26)rect(x+i,floor.y+17+i%14,11,4,mountainScene?'#617359':sea?'#48707a':'#604552');
   }
   if(mountainScene){
+    for(const trunk of climbTrees.mountain)tree(trunk.x-c,trunk.y,1.1);
     for(let i=0;i<4;i++){
       const x=263+i*43-c;
       monkey(x,402,i%2?-1:1,trained,.8);
@@ -1524,8 +1629,8 @@ function drawChapterThree(){
   thirdPeaches[thirdScene].forEach(([x,y],i)=>{
     if(!hallEntered&&!thirdPeachesTaken.has(thirdScene+i))peach(x-c,y);
   });
-  if(t<transformedUntil){
-    drawCrane(player.x+12-c,player.y+15,player.face);
+  if(transformedForm){
+    drawTransformation(c);
   }else{
     const x=player.x+12-c;
     if(t>=immuneUntil||Math.floor(t*22)%2===0){
@@ -1846,6 +1951,11 @@ function drawDemon(demon,camera){
   drawEnemyHealth(demon,x,y);
 }
 function drawEnemyHealth(demon,x,y){
+  if(t<(demon.fearUntil??0)){
+    ctx.fillStyle='#f6dc9e';
+    ctx.font='bold 11px sans-serif';
+    ctx.fillText('!',x-2,y-51);
+  }
   rect(x-11,y-45,22,3,'#47313d');
   rect(x-11,y-45,22*demon.hp/demon.maxHp,3,'#cf7969');
 }

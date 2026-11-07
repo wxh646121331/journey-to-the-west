@@ -73,7 +73,12 @@ if(!collected.has('shore0')||energy!==10)throw Error('Peach at full energy');
 player.x=1710;interact();advance();advance();advance();
 if(!learned||mode!=='play')throw Error('Apprenticeship');
 energy=1;castTransform();if(energy!==1||transformedUntil)throw Error('Insufficient energy');
-energy=10;castTransform();if(energy!==8||!transformedUntil)throw Error('Spell cost');
+const random=Math.random;
+function castWithRoll(roll){
+  Math.random=()=>roll;
+  try{castTransform();}finally{Math.random=random;}
+}
+energy=10;castWithRoll(.01);if(transformedForm?.id!=='crane'||energy!==8||!transformedUntil)throw Error('Spell cost');
 const beforeY=player.y;keys.add('ArrowUp');update(1/60);keys.clear();
 if(player.y>=beforeY||Math.abs(transformedUntil-t-10)>.001)throw Error('Crane flight controls or duration');
 t+=10.1;update(1/60);if(mode!=='end')throw Error('Chapter two ending');
@@ -132,6 +137,25 @@ player.x=120;interact();if(thirdScene!=='palace')throw Error('Guards block the e
 demons.forEach(d=>d.hp=0);
 interact();advance();advance();advance();advance();
 if(thirdScene!=='underworld'||health!==105)throw Error('Entering the underworld');
+const watcher=demons[0];
+Object.assign(player,{x:watcher.x-62,y:watcher.y-34,vy:0,ground:true});
+energy=10;
+watcher.aggro=true;watcher.strikeAt=t+.1;
+castWithRoll(.30);updateDemons(1/60);
+if(transformedForm?.id!=='fly'||watcher.aggro||watcher.strikeAt)throw Error('Fly must be ignored');
+clearTransformation();
+Object.assign(player,{x:watcher.x-62,y:watcher.y-34,vy:0,ground:true});
+castWithRoll(.58);
+const beforeFear=watcher.x;
+updateDemons(1/60);
+if(transformedForm?.id!=='tiger'||watcher.x<=beforeFear||watcher.aggro)throw Error('Tiger must scare enemies away');
+clearTransformation();
+watcher.fearUntil=0;
+Object.assign(player,{x:watcher.x-62,y:watcher.y-120,vy:0,ground:false});
+castWithRoll(.05);updateDemons(1/60);
+if(!watcher.aggro)throw Error('Crane is visible to enemies');
+clearTransformation();
+resetDemons();
 const chasing=demons[0];
 Object.assign(chasing,{x:992,y:427,ground:true,aggro:true,vy:0});
 Object.assign(player,{x:1090,y:356,ground:true});
@@ -182,6 +206,14 @@ if(health!==150||lives!==2||!player.ground)throw Error('Death uses a life and re
 player.x=120;interact();advance();
 if(thirdScene!=='mountain'||mode!=='play'||!player.ground||player.x<1215)throw Error('Grounded return at bridge');
 interact();if(mode!=='play')throw Error('Must walk back to monkeys');
+const trunk=climbTrees.mountain[0];
+Object.assign(player,{x:trunk.x-12,y:trunk.y-34,vy:0,ground:true});
+energy=10;castWithRoll(.9);
+keys.add('ArrowRight');updateRun(1/60);keys.clear();
+if(transformedForm?.id!=='squirrel'||player.vx<=326)throw Error('Squirrel running speed');
+keys.add('ArrowUp');update(1/60);keys.clear();
+if(climbingTree!==trunk||player.y>=trunk.y-34)throw Error('Squirrel climbs the trunk');
+clearTransformation();
 player.x=320;interact();advance();advance();advance();
 if(mode!=='end')throw Error('Third chapter ending');
 
