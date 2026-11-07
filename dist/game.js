@@ -18,7 +18,13 @@ function tone(f=440,d=.12){if(muted)return;try{audio??=new (window.AudioContext|
 function toast(s){$('toast').textContent=s;toastUntil=t+3.5;}
 function setSteps(n){for(let i=0;i<3;i++)$('step'+i).classList.toggle('active',i<=n);}
 function save(){if(mode!=='play')return;try{localStorage.setItem(SAVE,JSON.stringify({x:checkpoint,score,taken:peaches.map(p=>p.taken),found,challenged,escort}));}catch{}}
-function reset(){$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);Object.assign(player,{x:90,y:360,vx:0,vy:0,ground:false});$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
+function placePlayerOnGround(route,x){
+  const floor=route.find(p=>x>=p.x&&x+player.w<=p.x+p.w)??route[0];
+  const safeX=Math.max(floor.x,Math.min(floor.x+floor.w-player.w,x));
+  Object.assign(player,{x:safeX,y:floor.y-player.h,vx:0,vy:0,ground:true});
+  jumpRequestedUntil=-1;
+}
+function reset(){$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false){activeQuiz={...q,final};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
@@ -124,7 +130,7 @@ function finish(){$('stamina').hidden=true;$('quest').hidden=true;mode='end';end
 function pause(){jumpRequestedUntil=-1;if(['cover','end'].includes(mode))return;paused=!paused;keys.clear();$('pausePanel').hidden=!paused;}
 $('start').onclick=start;$('restart').onclick=start;$('resume').onclick=pause;$('pause').onclick=pause;$('sound').onclick=()=>{muted=!muted;$('sound').textContent='♫ 声音：'+(muted?'关':'开');tone(523);};
 try{if(localStorage.getItem(SAVE))$('continue').hidden=false;}catch{}
-$('continue').onclick=()=>{try{const s=JSON.parse(localStorage.getItem(SAVE));if(s?.chapter===3){startChapterThree(s);return;}if(s?.chapter===2){startChapterTwo(s);return;}reset();score=s.score||0;challenged=!!s.challenged;found=!!s.found;escort=!!s.escort;checkpoint=s.x||90;player.x=checkpoint;player.y=270;peaches.forEach((p,i)=>p.taken=!!s.taken?.[i]);$('cover').hidden=true;$('pause').hidden=false;tone(392);beginPlay();if(found)setSteps(2);}catch{start();}};
+$('continue').onclick=()=>{try{const s=JSON.parse(localStorage.getItem(SAVE));if(s?.chapter===3){startChapterThree(s);return;}if(s?.chapter===2){startChapterTwo(s);return;}reset();score=s.score||0;challenged=!!s.challenged;found=!!s.found;escort=!!s.escort;checkpoint=s.x||90;placePlayerOnGround(platforms,checkpoint);peaches.forEach((p,i)=>p.taken=!!s.taken?.[i]);$('cover').hidden=true;$('pause').hidden=false;tone(392);beginPlay();if(found)setSteps(2);}catch{start();}};
 $('stage').addEventListener('click',e=>{if(e.target.closest('button'))return;advance();});
 window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.key===' ')e.preventDefault();if(e.repeat)return;if(mode==='book'&&!paused&&['ArrowLeft','ArrowRight'].includes(e.code)){flipBook(e.code==='ArrowLeft'?-1:1);return;}if(e.code==='Escape'){pause();return;}if(paused)return;if((e.code==='Space'||e.key===' ')&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'||e.key===' '||e.key==='ArrowUp'||e.key?.toLowerCase()==='w')jump();if(e.code==='KeyE')interact();if(e.code==='KeyF')castTransform();if(e.code==='KeyA')swingStaff();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end'].includes(mode))pause();});
 document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();if(b.hasPointerCapture&&!b.hasPointerCapture(e.pointerId)){try{b.setPointerCapture(e.pointerId);}catch{}}keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();if(b.dataset.key==='KeyF')castTransform();if(b.dataset.key==='KeyA')swingStaff();});if(b.dataset.key==='Space')b.addEventListener('click',e=>{if(e.detail===0)jump();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
@@ -165,7 +171,7 @@ if(!wasGrounded&&p.ground){footstep(true);}
 if(!wasGrounded&&p.ground)scatter(p.x+12,p.y+p.h,10,['#d5bf8c','#81975d']);
 if((oldX<2317)!==(p.x<2317))scatter(2317,p.y+15,60,['#d4fff0','#8fcfc4','#f5f9db'],130);
 applyJumpRequest();
-if(p.y>600){jumpRequestedUntil=-1;p.x=checkpoint;p.y=270;p.vy=0;toast('溪水将你送回岸边。再试一次吧！');}if(p.ground&&p.x>1540&&p.x<1790)checkpoint=1580;if(p.ground&&p.x>2525&&challenged&&!found)checkpoint=2570;for(const f of peaches){if(!f.taken&&Math.abs(p.x+12-f.x)<27&&Math.abs(p.y+17-f.y)<34){f.taken=true;scatter(f.x,f.y,36,['#ffd39a','#f1a785','#f9edbd'],100);tone(740,.09);toast('仙桃 +1');save();}}cam+=((Math.max(0,Math.min(2540,p.x-330)))-cam)*Math.min(1,dt*7);$('area').textContent=p.x<650?'花果山 · 灵石台':p.x<1550?'花果山 · 青石涧':p.x<2320?'花果山 · 飞瀑前':'水帘洞 · 别有洞天';$('counts').textContent=`仙桃 ${peaches.filter(f=>f.taken).length}/12　✦ ${score}`;$('status').textContent=escort?'目标 · 带猴群到石王座前':found?'目标 · 返回猴群，带大家入住水帘洞':challenged?'目标 · 穿过瀑布，调查洞内石碑':'目标 · 沿溪流寻找猴群';if(t>saveTime){save();saveTime=t+4;}}
+if(p.y>600){placePlayerOnGround(platforms,checkpoint);toast('溪水将你送回岸边。再试一次吧！');}if(p.ground&&p.x>1540&&p.x<1790)checkpoint=1580;if(p.ground&&p.x>2525&&challenged&&!found)checkpoint=2570;for(const f of peaches){if(!f.taken&&Math.abs(p.x+12-f.x)<27&&Math.abs(p.y+17-f.y)<34){f.taken=true;scatter(f.x,f.y,36,['#ffd39a','#f1a785','#f9edbd'],100);tone(740,.09);toast('仙桃 +1');save();}}cam+=((Math.max(0,Math.min(2540,p.x-330)))-cam)*Math.min(1,dt*7);$('area').textContent=p.x<650?'花果山 · 灵石台':p.x<1550?'花果山 · 青石涧':p.x<2320?'花果山 · 飞瀑前':'水帘洞 · 别有洞天';$('counts').textContent=`仙桃 ${peaches.filter(f=>f.taken).length}/12　✦ ${score}`;$('status').textContent=escort?'目标 · 带猴群到石王座前':found?'目标 · 返回猴群，带大家入住水帘洞':challenged?'目标 · 穿过瀑布，调查洞内石碑':'目标 · 沿溪流寻找猴群';if(t>saveTime){save();saveTime=t+4;}}
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x*PIXEL_SCALE)/PIXEL_SCALE,Math.round(y*PIXEL_SCALE)/PIXEL_SCALE,Math.round(w*PIXEL_SCALE)/PIXEL_SCALE,Math.round(h*PIXEL_SCALE)/PIXEL_SCALE);}
 function poly(points,c){ctx.fillStyle=c;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();}
 function mountain(x,y,w,h,c){poly([[x,y+h],[x+w*.12,y+h*.56],[x+w*.25,y+h*.56],[x+w*.25,y+h*.28],[x+w*.36,y+h*.28],[x+w*.36,y+h*.12],[x+w*.47,y],[x+w*.6,y+h*.06],[x+w*.6,y+h*.26],[x+w*.72,y+h*.26],[x+w*.8,y+h*.6],[x+w*.92,y+h*.6],[x+w,y+h]],c);}
@@ -465,10 +471,7 @@ function startChapterTwo(saved){
   voyageTime=0;
   dockWait=0;
   checkpoint=saved?.checkpoint??90;
-  player.x=checkpoint;
-  const floor=secondRoutes[region].find(platform=>checkpoint>=platform.x&&checkpoint<platform.x+platform.w);
-  player.y=(floor?.y??secondRoutes[region][0].y)-player.h;
-  player.ground=true;
+  placePlayerOnGround(secondRoutes[region],checkpoint);
   $('cover').hidden=true;
   $('pause').hidden=false;
   $('chapterLabel').textContent='CHAPTER 02 / 漂洋寻仙';
@@ -512,7 +515,7 @@ function arriveAcrossSea(){
   region='shore';
   checkpoint=90;
   cam=0;
-  Object.assign(player,{x:90,y:350,vy:0,vx:0,ground:false});
+  placePlayerOnGround(secondRoutes.shore,90);
   chapterTwoSave();
   chapterTwoDialogue([
     ['海上','一叶帆船乘风破浪。美猴王漂过南赡部洲，又渡西海，终于来到西牛贺洲。'],
@@ -560,7 +563,7 @@ function updateChapterTwo(dt){
   if(updateFlight(dt,route))return;
   updateRun(dt);
   moveOnPlatforms(route,dt);
-  if(p.y>590){jumpRequestedUntil=-1;p.x=checkpoint;p.y=305;p.vy=0;toast('回到最近的落脚点。');}
+  if(p.y>590){placePlayerOnGround(route,checkpoint);toast('回到最近的落脚点。');}
   if(p.ground&&p.x>1430&&p.x<1510&&checkpoint<1430){checkpoint=1440;chapterTwoSave();}
   secondPeaches[region].forEach(([x,y],i)=>{
     const id=region+i;
@@ -788,7 +791,7 @@ const thirdRoutes={
     {x:794,y:427,w:205},{x:1040,y:390,w:178},{x:1260,y:430,w:590}
   ]
 };
-let thirdScene='mountain', hasStaff=false, namesCleared=false, trained=false, dragonSpoken=false;
+let thirdScene='mountain', hasStaff=false, namesCleared=false, trained=false, dragonSpoken=false, returnedFromUnderworld=false;
 let health=100, immuneUntil=0, combo=0, swingAt=-Infinity, swingFacing=1;
 let bookPage=0, demons=[];
 let thirdPeachesTaken=new Set();
@@ -805,7 +808,7 @@ const deathBook=[
 function saveChapterThree(state){
   try{
     localStorage.setItem(SAVE,JSON.stringify({
-      chapter:3,scene:thirdScene,hasStaff,energy,thirdPeaches:[...thirdPeachesTaken],trained,dragonSpoken,namesCleared,checkpoint,...state
+      chapter:3,scene:thirdScene,hasStaff,energy,thirdPeaches:[...thirdPeachesTaken],trained,dragonSpoken,namesCleared,returnedFromUnderworld,checkpoint,...state
     }));
   }catch{}
 }
@@ -813,8 +816,8 @@ function resetDemons(){
   demons=[
     {x:861,min:822,max:985,y:427,dir:1},
     {x:1120,min:1060,max:1192,y:390,dir:-1},
-    {x:1375,min:1285,max:1455,y:430,dir:1}
-  ].map(demon=>({...demon,hp:20,strikeAt:0,readyAt:0,vy:0,ground:true,aggro:false,landing:null}));
+    {x:1375,min:1285,max:1455,y:430,dir:1,pig:true}
+  ].map(demon=>({...demon,hp:demon.pig?36:20,maxHp:demon.pig?36:20,strikeAt:0,readyAt:0,vy:0,ground:true,aggro:false,landing:null}));
 }
 function startChapterThree(saved){
   const previousEnergy=chapter===2?energy:0;
@@ -830,7 +833,8 @@ function startChapterThree(saved){
   hasStaff=!saved?.intro&&(thirdScene==='underworld'||!!saved?.hasStaff);
   trained=!!saved?.trained;
   dragonSpoken=!!saved?.dragonSpoken||hasStaff;
-  namesCleared=thirdScene==='underworld'&&!!saved?.namesCleared;
+  returnedFromUnderworld=thirdScene==='mountain'&&!saved?.intro&&!!saved?.returnedFromUnderworld;
+  namesCleared=(thirdScene==='underworld'||returnedFromUnderworld)&&!!saved?.namesCleared;
   checkpoint=saved?.intro?90:(saved?.checkpoint??90);
   health=100;
   immuneUntil=0;
@@ -838,10 +842,7 @@ function startChapterThree(saved){
   combo=0;
   bookPage=0;
   resetDemons();
-  player.x=checkpoint;
-  const floor=thirdRoutes[thirdScene].find(platform=>checkpoint>=platform.x&&checkpoint<platform.x+platform.w);
-  player.y=(floor?.y??thirdRoutes[thirdScene][0].y)-player.h;
-  player.ground=true;
+  placePlayerOnGround(thirdRoutes[thirdScene],checkpoint);
   $('cover').hidden=true;
   $('hud').hidden=false;
   $('pause').hidden=false;
@@ -872,18 +873,18 @@ function openThirdRoute(){
   $('counts').textContent=hasStaff?'如意金箍棒':'';
   refreshHealth();
   const quest=thirdScene==='mountain'
-    ? trained?'走到水帘洞拱桥下的小河，潜入东海':'找到猴群，带它们操练兵器'
+    ? returnedFromUnderworld?'从桥边走回猴群，告诉它们幽冥的事':trained?'走到水帘洞拱桥下的小河，潜入东海':'找到猴群，带它们操练兵器'
     : thirdScene==='palace'
       ? hasStaff?'带着金箍棒回花果山':dragonSpoken?'前往海藏，取定海神针':'走近龙王的宝座'
       : namesCleared?'原路返回幽冥入口，回花果山':'穿过幽冥，去阎王宝座前';
   chapterTwoQuest(quest);
   saveChapterThree();
 }
-function switchThirdScene(scene){
+function switchThirdScene(scene,x=90){
   thirdScene=scene;
-  checkpoint=90;
-  cam=0;
-  Object.assign(player,{x:90,y:340,vx:0,vy:0,ground:false});
+  checkpoint=x;
+  cam=Math.max(0,Math.min(930,x-315));
+  placePlayerOnGround(thirdRoutes[scene],x);
 }
 function returnFromPalace(){
   switchThirdScene('mountain');
@@ -909,13 +910,23 @@ function meetDragon(){
 function interactChapterThree(){
   if(t<transformedUntil){toast('恢复原形后即可互动。');return;}
   if(thirdScene==='mountain'){
+    if(returnedFromUnderworld){
+      if(player.x>=235&&player.x<=490){
+        chapterTwoDialogue([
+          ['猴群','大王回来了！方才你在松阴下睡得好沉。'],
+          ['孙悟空','我到了幽冥，把咱们猴属的名字从生死簿上划去了。'],
+          ['水帘洞','群猴听罢齐声欢呼。龙宫与冥司也各自上表，奏闻天庭。']
+        ],finishChapterThree);
+      }else toast($('questTitle').textContent);
+      return;
+    }
     if(!trained&&player.x>=235&&player.x<=490){
       chapterTwoDialogue([
         ['猴群','列阵！举刀！换长枪！'],
         ['孙悟空','这些凡间兵器给孩儿们练手还行，我一用力就觉得太轻，根本不趁手。'],
         ['老猴','洞中小拱桥下的河水通着东海。大王何不去龙宫求一件宝物？']
       ],()=>{trained=true;openThirdRoute();});
-    }else if(trained&&player.x>=1010&&player.x<=1192&&player.ground&&player.y+player.h===454){
+    }else if(!returnedFromUnderworld&&trained&&player.x>=1010&&player.x<=1192&&player.ground&&player.y+player.h===454){
       switchThirdScene('palace');
       openThirdRoute();
     }else toast($('questTitle').textContent);
@@ -944,7 +955,9 @@ function interactChapterThree(){
     return;
   }
   if(namesCleared&&player.x<=155){
-    talk('花果山 · 梦醒','悟空从松阴下醒来，把幽冥之事说给群猴听。龙宫和冥司也各自上表，奏闻天庭。',finishChapterThree);
+    returnedFromUnderworld=true;
+    switchThirdScene('mountain',1260);
+    talk('花果山 · 梦醒','悟空在水帘洞的桥边醒来。猴群还在洞中等着他。',openThirdRoute);
     return;
   }
   toast($('questTitle').textContent);
@@ -1028,10 +1041,10 @@ function updateDemons(dt){
     if(Math.abs(gap)<155&&Math.abs(player.y+34-demon.y)<75)demon.aggro=true;
     if(demon.strikeAt&&t>=demon.strikeAt){
       demon.strikeAt=0;
-      demon.readyAt=t+.95;
+      demon.readyAt=t+(demon.pig?.72:.95);
       noiseHit(.13,.10,1500,280);
       if(sameHeight&&Math.abs(gap)<49&&t>=immuneUntil){
-        health=Math.max(0,health-20);
+        health=Math.max(0,health-(demon.pig?28:20));
         immuneUntil=t+.7;
         refreshHealth();
         noiseHit(.2,.22,870,100);
@@ -1039,7 +1052,7 @@ function updateDemons(dt){
     }
     if(demon.ground&&!demon.strikeAt&&sameHeight&&Math.abs(gap)<37&&demon.aggro){
       demon.dir=Math.sign(gap)||demon.dir;
-      if(t>=demon.readyAt)demon.strikeAt=t+.32;
+      if(t>=demon.readyAt)demon.strikeAt=t+(demon.pig?.25:.32);
       continue;
     }
     const index=route.findIndex(f=>demon.x>=f.x&&demon.x<f.x+f.w);
@@ -1061,7 +1074,7 @@ function updateDemons(dt){
     if(!demon.strikeAt){
       const target=demon.landing??(demon.aggro?player.x+12:(demon.dir>0?demon.max:demon.min));
       const distance=target-demon.x;
-      demon.x+=Math.sign(distance)*Math.min(Math.abs(distance),(demon.landing!==null?186:demon.aggro?102:65)*dt);
+      demon.x+=Math.sign(distance)*Math.min(Math.abs(distance),(demon.landing!==null?186:demon.aggro?(demon.pig?132:102):65)*dt);
       if(demon.ground&&index>=0){
         const floor=route[index];
         demon.x=Math.max(floor.x+2,Math.min(floor.x+floor.w-2,demon.x));
@@ -1111,8 +1124,7 @@ function updateChapterThree(dt){
   });
   if(player.y>590||health===0){
     if(health===0){health=100;resetDemons();refreshHealth();}
-    jumpRequestedUntil=-1;
-    Object.assign(player,{x:checkpoint,y:318,vy:0,ground:false});
+    placePlayerOnGround(route,checkpoint);
     toast('回到最近的落脚点。');
   }
   if(player.ground&&player.x>=1282&&player.x<1400&&checkpoint<1282){
@@ -1251,8 +1263,9 @@ function drawChapterThree(){
   ctx.globalAlpha=1;
   let label='';
   if(mountainScene){
-    if(!trained&&player.x>=235&&player.x<=490)label='操练猴群';
-    if(trained&&player.x>=1010&&player.x<=1192&&player.ground&&player.y+player.h===454)label='潜入小河';
+    if(returnedFromUnderworld&&player.x>=235&&player.x<=490)label='与猴群交谈';
+    if(!returnedFromUnderworld&&!trained&&player.x>=235&&player.x<=490)label='操练猴群';
+    if(!returnedFromUnderworld&&trained&&player.x>=1010&&player.x<=1192&&player.ground&&player.y+player.h===454)label='潜入小河';
   }else if(sea){
     if(dragonSpoken&&!hasStaff&&player.x>=1550)label='取定海神针';
     if(hasStaff&&player.x<180)label='返回花果山';
@@ -1382,7 +1395,11 @@ function drawDemon(demon,camera){
   rect(x-10,y-32,20,14,'#997688');
   rect(x-11,y-38,4,8,'#c49c8e');rect(x+7,y-38,4,8,'#c49c8e');
   rect(x-6,y-28,3,3,'#ffd478');rect(x+3,y-28,3,3,'#ffd478');
-  rect(x-5,y-22,11,2,'#533e51');
+  if(demon.pig){
+    rect(x-13,y-31,5,8,'#bc8c8c');rect(x+8,y-31,5,8,'#bc8c8c');
+    rect(x-7,y-25,14,8,'#d49f9d');
+    rect(x-4,y-22,2,2,'#724a59');rect(x+2,y-22,2,2,'#724a59');
+  }else rect(x-5,y-22,11,2,'#533e51');
   rect(x-4,y-21,2,4,'#e7c9a1');rect(x+3,y-21,2,4,'#e7c9a1');
   rect(x-8,y-6,6,6,'#514353');rect(x+3,y-6,6,6,'#514353');
   ctx.save();ctx.translate(x+10*demon.dir,y-16);ctx.scale(demon.dir,1);
@@ -1392,5 +1409,5 @@ function drawDemon(demon,camera){
   for(let i=0;i<4;i++)rect(13+i*3,-8,2,4,'#d7ad85');
   ctx.restore();
   rect(x-11,y-45,22,3,'#47313d');
-  rect(x-11,y-45,22*demon.hp/20,3,'#cf7969');
+  rect(x-11,y-45,22*demon.hp/demon.maxHp,3,'#cf7969');
 }

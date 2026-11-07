@@ -116,6 +116,9 @@ $('bookCross').onclick();if(namesCleared)throw Error('Wrong book page');
 flipBook(1);flipBook(1);$('bookCross').onclick();$('bookClose').onclick();
 if(!namesCleared||mode!=='play')throw Error('Crossing names off the book');
 player.x=120;interact();advance();
+if(thirdScene!=='mountain'||mode!=='play'||!player.ground||player.x<1215)throw Error('Grounded return at bridge');
+interact();if(mode!=='play')throw Error('Must walk back to monkeys');
+player.x=320;interact();advance();advance();advance();
 if(mode!=='end')throw Error('Third chapter ending');
 
 `,context);
