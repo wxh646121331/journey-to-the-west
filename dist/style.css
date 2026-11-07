@@ -19,3 +19,12 @@
 #bookActions{display:flex;flex-wrap:wrap;gap:6px}
 #bookActions button{padding:5px 10px;border:1px solid #b5a26c;color:#f4e7ba;background:#304e42}
 #bookActions button:disabled{opacity:.45;cursor:default}
+
+.vital{position:absolute;z-index:3;display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 9px;white-space:nowrap;pointer-events:none}
+#health{top:53px;right:18px}
+#energy{top:53px;left:18px}
+#stamina{bottom:25px;left:18px;background:#19352ce8;border:1px solid #8eac75;color:#e1efce}
+#staminaMeter{width:66px;accent-color:#a3c382}
+#healthMeter,#energyMeter{width:65px}
+@media(pointer:coarse){#stamina{bottom:69px}#touch button{width:clamp(31px,8vw,49px)}#touch>div{gap:5px}}
+@media(max-width:700px){.vital{font-size:10px;gap:4px}#health,#energy{top:38px}#healthMeter,#energyMeter,#staminaMeter{width:42px}}
