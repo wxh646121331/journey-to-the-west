@@ -19,12 +19,13 @@ function toast(s){$('toast').textContent=s;toastUntil=t+3.5;}
 function setSteps(n){for(let i=0;i<3;i++)$('step'+i).classList.toggle('active',i<=n);}
 function save(){if(mode!=='play')return;try{localStorage.setItem(SAVE,JSON.stringify({x:checkpoint,score,taken:peaches.map(p=>p.taken),found,challenged,escort,...vitalSave()}));}catch{}}
 function placePlayerOnGround(route,x){
+  slamActive=false;
   const floor=route.find(p=>x>=p.x&&x+player.w<=p.x+p.w)??route[0];
   const safeX=Math.max(floor.x,Math.min(floor.x+floor.w-player.w,x));
   Object.assign(player,{x:safeX,y:floor.y-player.h,vx:0,vy:0,ground:true});
   jumpRequestedUntil=-1;
 }
-function reset(){health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
+function reset(){slamActive=false;slamImpact=null;health=100;maxHealth=100;lives=3;immuneUntil=0;damageNumbers.length=0;$('stamina').hidden=true;stamina=100;flightTrialDone=false;$('health').hidden=true;$('staffButton').hidden=true;$('flightDown').hidden=true;jumpRequestedUntil=-1;chapter=1;$('chapterLabel').textContent='CHAPTER 01 / 花果山';$('energy').hidden=true;$('spellButton').hidden=true;seatedAt=null;escort=false;afterTalk=null;followers.forEach((monkey,i)=>Object.assign(monkey,{x:followerStarts[i],y:418,vy:0,ground:true,face:1,moving:false,landing:null}));$('quest').hidden=true;particles.length=0;storyIndex=0;score=0;activeQuiz=null;found=false;challenged=false;ending=false;checkpoint=90;cam=0;peaches.forEach(p=>p.taken=false);placePlayerOnGround(platforms,90);$('ending').hidden=true;$('pausePanel').hidden=true;paused=false;keys.clear();}
 function start(){reset();mode='story';$('cover').hidden=true;$('pause').hidden=false;$('status').textContent='序章 · 灵根育孕源流出';setSteps(0);showLine();tone(392);}
 function showLine(){const l=lines[storyIndex];$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">第一回 · ${l[0]}</div><div class="line">${l[1]}</div><span class="next">点击屏幕 / 空格 继续 ▾</span>`;}
 function showQuiz(q,final=false){activeQuiz={...q,final};quizDone=false;mode='quiz';$('touch').hidden=true;$('dialog').hidden=false;$('dialog').innerHTML=`<div class="speaker">山海问答 · ${final?'最后一问':'读到这里，考考你'}</div><div class="line">${q.q}</div>${q.a.map((a,i)=>`<button class="option" data-answer="${i}">${'ABC'[i]} &nbsp; ${a}</button>`).join('')}`;$('dialog').querySelectorAll('[data-answer]').forEach(b=>b.onclick=e=>{e.stopPropagation();answer(Number(b.dataset.answer));});}
@@ -135,7 +136,7 @@ $('stage').addEventListener('click',e=>{if(e.target.closest('button'))return;adv
 window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)||e.key===' ')e.preventDefault();if(e.repeat)return;if(mode==='book'&&!paused&&['ArrowLeft','ArrowRight'].includes(e.code)){flipBook(e.code==='ArrowLeft'?-1:1);return;}if(e.code==='Escape'){pause();return;}if(paused)return;if((e.code==='Space'||e.key===' ')&&['story','quiz','talk'].includes(mode)){advance();return;}keys.add(e.code);if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'||e.key===' '||e.key==='ArrowUp'||e.key?.toLowerCase()==='w')jump();if(e.code==='KeyE')interact();if(e.code==='KeyF')castTransform();if(e.code==='KeyA')swingStaff();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(!paused&&!['cover','end','gameover'].includes(mode))pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!['cover','end','gameover'].includes(mode))pause();});
 document.querySelectorAll('[data-key]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();if(b.hasPointerCapture&&!b.hasPointerCapture(e.pointerId)){try{b.setPointerCapture(e.pointerId);}catch{}}keys.add(b.dataset.key);if(b.dataset.key==='Space')jump();if(b.dataset.key==='KeyE')interact();if(b.dataset.key==='KeyF')castTransform();if(b.dataset.key==='KeyA')swingStaff();});if(b.dataset.key==='Space')b.addEventListener('click',e=>{if(e.detail===0)jump();});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key));});
 function jump(){
-  if(mode!=='play'||paused)return;
+  if(mode!=='play'||paused||slamActive)return;
   jumpRequestedUntil=t+.18;
   applyJumpRequest();
 }
@@ -539,7 +540,7 @@ function interactChapterTwo(){
   });
 }
 function castTransform(){
-  if(chapter<2||mode!=='play'||paused||!learned||t<transformedUntil)return;
+  if(chapter<2||mode!=='play'||paused||slamActive||!learned||t<transformedUntil)return;
   if(energy<2){toast('元气不足。沿路拾两颗仙桃再来试。');return;}
   energy-=2;
   renderEnergy();
@@ -688,7 +689,7 @@ function drawChapterTwo(){
     const x=145+voyageTime*155;
     const y=451+Math.sin(t*3)*4;
     drawSailboat(x,y);
-    monkey(x-25,y-35,1,false,.85,true);
+    monkey(x-25,y-35,1,false,.85);
     for(let i=0;i<17;i++)rect(x-63-i*6,y+9+i%3*4,4,1,'#c0e8d0');
     return;
   }
@@ -748,7 +749,7 @@ function drawChapterTwo(){
   if(t<transformedUntil){
     drawCrane(player.x+12-c,player.y+15,player.face);
   }else{
-    monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx,1,true);
+    monkey(player.x+12-c,player.y+1,player.face,player.ground&&!!player.vx);
   }
   for(const p of particles){
     ctx.globalAlpha=Math.min(1,p.life/p.duration*1.7);
@@ -795,6 +796,7 @@ const thirdRoutes={
   ]
 };
 let thirdScene='mountain', hasStaff=false, namesCleared=false, trained=false, dragonSpoken=false, returnedFromUnderworld=false;
+let slamActive=false, slamImpact=null;
 let health=100, maxHealth=100, lives=3, immuneUntil=0, combo=0, swingAt=-Infinity, swingFacing=1;
 let bookPage=0, demons=[];
 const damageNumbers=[];
@@ -865,7 +867,7 @@ function startChapterThree(saved){
   $('hud').hidden=false;
   $('pause').hidden=false;
   $('chapterLabel').textContent='CHAPTER 03 / 龙宫与幽冥';
-  $('hint').textContent='← → 移动，空格跳跃，E 互动，取得金箍棒后按 A 攻击。';
+  $('hint').textContent='← → 移动，空格跳跃，E 互动，取得金箍棒后按 A 攻击，空中按 A 消耗 50 体力砸地。';
   if(saved&&!saved.intro){openThirdRoute();return;}
   chapterTwoDialogue([
     ['水帘洞','悟空学艺归来，见群猴用竹竿木刀练武，便想给它们弄些真兵器。'],
@@ -1114,28 +1116,59 @@ function renderDeathBook(){
   };
 }
 function swingStaff(){
-  if(chapter!==3||mode!=='play'||paused||!hasStaff||t<transformedUntil||t-swingAt<.22)return;
-  combo=t-swingAt<.72?combo%3+1:1;
+  if(chapter!==3||mode!=='play'||paused||!hasStaff||t<transformedUntil||slamActive||t-swingAt<.40)return;
+  if(!player.ground){
+    if(stamina<50){toast('空中砸击需要 50 点体力。');return;}
+    stamina-=50;
+    renderStamina();
+    slamActive=true;
+    combo=0;
+    swingAt=t;
+    swingFacing=player.face;
+    jumpRequestedUntil=-1;
+    player.vy=670;
+    noiseHit(.29,.23,3600,310);
+    return;
+  }
+  combo=t-swingAt<1.02?combo%3+1:1;
   swingAt=t;
   swingFacing=player.face;
   const damage=staffDamage[combo-1];
-  noiseHit(.11,.19+combo*.038,4100,380);
-  chirp(165+combo*40,75,.14,.035,.08,'triangle');
+  noiseHit(.24,.19+combo*.04,4300,270);
+  noiseHit(.16,.10,850,140,.025);
   if(combo===3){
-    noiseHit(.21,.17,720,125,.05);
-    if(player.ground){player.vy=-250;player.ground=false;}
+    player.vy=-250;
+    player.ground=false;
   }
   for(const demon of demons){
     const ahead=(demon.x-(player.x+12))*swingFacing;
     if(!thirdCombatActive()||demon.hp<=0||ahead< -14||ahead>83+combo*8||Math.abs(demon.y-player.y-34)>44)continue;
-    demon.hp=Math.max(0,demon.hp-damage);
-    showDamage(demon.x,demon.y-48,damage);
-    demon.aggro=true;
-    demon.dir=Math.sign(player.x+12-demon.x)||demon.dir;
-    demon.strikeAt=0;
-    demon.readyAt=t+.34;
-    scatter(demon.x,demon.y-18,15+combo*4,['#f6c575','#fcdfae','#aa6975'],85);
-    tone(175+combo*50,.09);
+    hitEnemy(demon,damage);
+  }
+}
+function hitEnemy(demon,damage){
+  demon.hp=Math.max(0,demon.hp-damage);
+  showDamage(demon.x,demon.y-48,damage);
+  demon.aggro=true;
+  demon.dir=Math.sign(player.x+12-demon.x)||demon.dir;
+  demon.strikeAt=0;
+  demon.readyAt=t+.34;
+  scatter(demon.x,demon.y-18,15+combo*4,['#f6c575','#fcdfae','#aa6975'],85);
+  noiseHit(.17,.32,1300,85);
+  chirp(120,56,.13,0,.13,'triangle');
+}
+function landStaffSlam(){
+  slamActive=false;
+  swingAt=t;
+  slamImpact={x:player.x+12,y:player.y+player.h,at:t};
+  scatter(slamImpact.x,slamImpact.y-3,74,['#fff0b0','#e7aa65','#9a7657'],165);
+  noiseHit(.38,.48,720,45);
+  noiseHit(.13,.29,3400,360,.025);
+  chirp(92,38,.27,0,.20);
+  if(thirdCombatActive()){
+    for(const demon of demons){
+      if(demon.hp>0&&Math.abs(demon.x-slamImpact.x)<=94&&Math.abs(demon.y-slamImpact.y)<=37)hitEnemy(demon,30);
+    }
   }
 }
 function thirdCombatActive(){
@@ -1148,16 +1181,24 @@ function updateDemons(dt){
     const gap=player.x+12-demon.x;
     const sameHeight=Math.abs(player.y+34-demon.y)<36;
     if(Math.abs(gap)<155&&Math.abs(player.y+34-demon.y)<75)demon.aggro=true;
+    if(demon.kind==='shrimp'&&demon.strikeAt&&demon.strikeAt-t<=.15){
+      const floor=route.find(f=>demon.x>=f.x&&demon.x<f.x+f.w);
+      const thrust=Math.max(0,Math.min(320*dt,gap*demon.dir-11));
+      if(floor)demon.x=Math.max(floor.x+2,Math.min(floor.x+floor.w-2,demon.x+demon.dir*thrust));
+    }
     if(demon.strikeAt&&t>=demon.strikeAt){
       demon.strikeAt=0;
       demon.readyAt=t+demon.recovery;
       if(demon.kind==='shrimp'){
-        const floor=route.find(f=>demon.x>=f.x&&demon.x<f.x+f.w);
-        const thrust=Math.max(0,Math.min(34,gap*demon.dir-12));
-        if(floor)demon.x=Math.max(floor.x+2,Math.min(floor.x+floor.w-2,demon.x+demon.dir*thrust));
+        noiseHit(.12,.16,2700,370);
         scatter(demon.x,demon.y-14,10,['#d7f7dd','#a5d1c0'],75);
+      }else if(demon.kind==='crab'){
+        noiseHit(.12,.25,3100,540);
+        noiseHit(.21,.17,670,105,.035);
+      }else{
+        noiseHit(.19,.19,1700,220);
+        chirp(145,73,.16,0,.07,'triangle');
       }
-      noiseHit(.13,.10,1500,280);
       const attackGap=(player.x+12-demon.x)*demon.dir;
       if(sameHeight&&attackGap>=-10&&attackGap<demon.reach+11&&t>=immuneUntil){
         hurtPlayer(demon.damage,true);
@@ -1171,7 +1212,7 @@ function updateDemons(dt){
       continue;
     }
     const index=route.findIndex(f=>demon.x>=f.x&&demon.x<f.x+f.w);
-    if(demon.aggro&&demon.ground){
+    if(demon.aggro&&demon.ground&&!demon.strikeAt){
       demon.dir=Math.sign(gap)||demon.dir;
       const floor=route[index];
       const next=route[index+demon.dir];
@@ -1220,9 +1261,10 @@ function updateChapterThree(dt){
     if(health===0){transformedUntil=0;$('flightDown').hidden=true;loseLife(route);}
     return;
   }
-  updateRun(dt);
+  if(slamActive)player.vx=swingFacing*75;else updateRun(dt);
   const limit=thirdScene==='palace'&&!dragonSpoken?1030:Infinity;
   moveOnPlatforms(route,dt,limit);
+  if(slamActive&&player.ground)landStaffSlam();
   if(thirdScene==='palace'&&!dragonSpoken&&player.x>=835&&player.x<=1040&&player.ground){meetDragon();return;}
   if(thirdScene==='underworld'&&!namesCleared){
     if(player.ground&&player.x>=1490&&player.x<=1585){meetUnderworldKing();return;}
@@ -1362,14 +1404,23 @@ function drawChapterThree(){
         ctx.save();
         ctx.translate(x,player.y+17);
         ctx.rotate(spinAge*Math.PI*2*swingFacing);
-        monkey(0,-17,player.face,false,1,true);
+        monkey(0,-17,player.face,false);
         ctx.restore();
       }else{
         const lean=t-swingAt<.24?swingFacing*(combo===2?3:5):0;
-        monkey(x+lean,player.y+1,player.face,player.ground&&!!player.vx,1,true);
+        monkey(x+lean,player.y+1,player.face,player.ground&&!!player.vx);
       }
     }
     if(hasStaff)drawStaff(c);
+  }
+  if(slamImpact&&t-slamImpact.at<.42){
+    const phase=(t-slamImpact.at)/.42;
+    ctx.globalAlpha=1-phase;
+    for(let i=0;i<31;i++){
+      const offset=(i-15)*(2+phase*6);
+      rect(slamImpact.x-c+offset,slamImpact.y-3-Math.sin(i*.61)*phase*14,5,3,'#ffe1a0');
+    }
+    ctx.globalAlpha=1;
   }
   for(const p of particles){
     ctx.globalAlpha=Math.min(1,p.life/p.duration*1.7);
@@ -1460,8 +1511,22 @@ function drawDivineIron(x){
 function drawStaff(camera){
   const x=player.x+12-camera;
   const y=player.y+17;
-  const age=(t-swingAt)/.26;
-  if(age>=1){
+  if(slamActive){
+    ctx.save();
+    ctx.translate(x+swingFacing*15,y+5);
+    ctx.rotate(swingFacing*-.36);
+    ctx.scale(1.8,1.55);
+    drawStaffShaft(-28,61);
+    ctx.restore();
+    for(let i=0;i<6;i++){
+      ctx.globalAlpha=(6-i)/12;
+      rect(x-22+i*9,y-16-i*6,2,10+i*2,'#ffdea1');
+    }
+    ctx.globalAlpha=1;
+    return;
+  }
+  const age=(t-swingAt)/.34;
+  if(age>=1||combo===0){
     const hand=x+15*player.face;
     ctx.save();
     ctx.translate(hand,y+4);
@@ -1550,7 +1615,16 @@ function drawSeaGuard(demon,x,y){
     rect(-16,-19,8,6,'#e89b74');
     rect(-11,-36,3,10,'#ecb18a');rect(4,-35,3,8,'#ecb18a');
     ctx.translate(8,-16);
-    ctx.rotate(demon.strikeAt?-.28:0);
+    const charging=demon.strikeAt&&demon.strikeAt-t<=.15;
+    if(charging){
+      ctx.globalAlpha=.72;
+      rect(23,-2,29,3,'#d9f9eb');
+      rect(32,-5,18,1,'#a2ddd3');
+      rect(-40,-4,23,2,'#a2ddd3');
+      rect(-36,4,19,1,'#d9f9eb');
+      ctx.globalAlpha=1;
+    }
+    ctx.rotate(demon.strikeAt&&!charging?-.28:0);
     rect(-16,-1,43,3,'#a2835f');
     poly([[25,-5],[35,0],[25,5]],'#d1dec9');
   }else{
