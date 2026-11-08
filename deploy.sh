@@ -40,4 +40,5 @@ if ! git push --force "$push_url" "$commit:refs/heads/gh-pages"; then
   echo "HTTPS 推送失败，改用 SSH：$ssh_url" >&2
   git push --force "$ssh_url" "$commit:refs/heads/gh-pages"
 fi
-echo "已推送 gh-pages，等 GitHub Pages 构建完成后访问：$URL（手机版：${URL}mobile/）"
+echo "已推送 gh-pages，等 GitHub Pages 构建完成后访问：${URL}"
+echo "手机版地址：${URL}mobile/"
