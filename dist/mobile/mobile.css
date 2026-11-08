@@ -1,0 +1,179 @@
+.mobile-game {
+  background: #102724;
+  color: #e8e5c9;
+  padding-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.mobile-game header {
+  height: auto;
+  min-height: 54px;
+  padding: max(7px, env(safe-area-inset-top)) 3px 7px;
+  border-color: #36514a;
+  gap: 8px;
+}
+.mobile-game .brand {color: #f1dfae; font-size: clamp(17px, 5vw, 26px)}
+.mobile-game .brand span {font-size: 7px; margin-top: 2px}
+.mobile-game .edition {color: #abc2ad; font-size: 11px; letter-spacing: 0}
+.mobile-game #sound {min-height: 44px; padding: 6px 9px; white-space: nowrap; color: #ede1b8; border-color: #567263}
+.mobile-game main {max-width: 1080px; margin: 8px auto 0}
+.mobile-game .chapter {padding: 0 2px 7px; color: #aec2ae; gap: 10px}
+.mobile-game .chapter span:last-child {display: block; text-align: right}
+.mobile-game #stage {
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+  border: 2px solid #64806b;
+  background: #102724;
+  box-shadow: none;
+}
+.mobile-game #stage canvas {width: 100%; height: 100%; object-fit: contain}
+.mobile-game #fullscreen, .mobile-game #pause {top: 4px; min-height: 44px; padding: 4px 7px; font-size: 12px}
+.mobile-game #fullscreen {right: 48px}
+.mobile-game #pause {right: 4px; min-width: 40px}
+.mobile-game #hud {top: 7px; left: 7px; right: 120px; font-size: 10px}
+.mobile-game #counts {display: none}
+.mobile-game #toast {top: 48px; font-size: 11px}
+.mobile-game #health, .mobile-game #energy {top: 30px; font-size: 10px; padding: 3px 4px}
+.mobile-game #health {right: 4px; top: 50px}
+.mobile-game #energy {left: 4px}
+.mobile-game #stamina {bottom: 4px; left: 4px; font-size: 10px; padding: 3px 4px}
+.mobile-game #quest {bottom: 4px; right: 4px; max-width: 62%; padding: 4px 6px}
+.mobile-game #quest small {margin-bottom: 1px; font-size: 8px}
+.mobile-game #quest strong {font-size: 10px}
+.mobile-game #heavenBossHud {top: 5px; width: min(32%, 200px); font-size: 9px; padding: 3px 4px}
+.mobile-game #heavenWarning {top: 74px; max-width: 95%; font-size: 10px; padding: 3px 5px}
+.mobile-game #rainStop {top: 49px; left: 50%}
+.mobile-game #dialog {
+  left: 2%;
+  right: 2%;
+  bottom: 4px;
+  max-height: 76%;
+  overflow: auto;
+  padding: 6px 10px;
+}
+.mobile-game #dialog .speaker {font-size: 9px; margin-bottom: 2px}
+.mobile-game #dialog .line {font-size: 13px; line-height: 1.4}
+.mobile-game #dialog button.option {min-height: 32px; margin-top: 3px; padding: 4px 8px}
+.mobile-game #dialog .mobile-next {
+  display: block;
+  margin: 4px 0 0 auto;
+  padding: 3px 10px;
+  min-height: 34px;
+  border: 1px solid #8fa787;
+  background: #28483e;
+  color: #f8e8b4;
+  font-size: 12px;
+}
+.mobile-game #dialog.orchard-dialog {top: 4px; bottom: auto; right: 112px; max-height: 68%}
+.mobile-game .overlay h1 {font-size: clamp(22px, 8vw, 55px); margin: 5px 0 8px}
+.mobile-game .overlay h2 {font-size: clamp(17px, 5vw, 30px); margin: 4px 0}
+.mobile-game .overlay p {margin: 4px 0 7px; font-size: 11px}
+.mobile-game .overlay .cover-foot {display: none}
+.mobile-game .overlay .primary {min-height: 44px; min-width: 0; padding: 7px 13px; font-size: 12px}
+.mobile-game #ending {overflow: auto; justify-content: safe center; padding: 5px}
+.mobile-game #touch:not([hidden]) {
+  position: static;
+  display: grid;
+  grid-template-columns: minmax(88px, .7fr) minmax(140px, 1.25fr);
+  align-items: start;
+  gap: 8px;
+  margin-top: 9px;
+  pointer-events: auto;
+}
+.mobile-game #touch > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-width: none;
+  padding: 7px;
+  background: #183731;
+  border: 1px solid #426454;
+  border-radius: 10px;
+}
+.mobile-game button,
+.mobile-game #touch {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.mobile-game .pad-label {grid-column: 1 / -1; color: #bdcfb4; font-size: 10px; padding-inline: 2px}
+.mobile-game #touch button {
+  width: 100%;
+  height: clamp(44px, 13vw, 64px);
+  padding: 0 3px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff3d1;
+  background: #284b40;
+  border: 1px solid #73937b;
+  border-radius: 8px;
+  touch-action: none;
+}
+.mobile-game #touch button.main-action {background: #c99958; color: #152a24; border-color: #eed1a0}
+.mobile-game #touch button:active {filter: brightness(1.32)}
+.mobile-game #runButton, .mobile-game #flightDown {grid-column: 1 / -1}
+.mobile-game .ascend-label,
+.mobile-game #touch:has(#flightDown:not([hidden])) .jump-label {display: none}
+.mobile-game #touch:has(#flightDown:not([hidden])) .ascend-label {display: inline}
+.mobile-info {display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 2px; font-size: 12px; color: #b8c8b4}
+.mobile-info a {color: #e9ce99; flex: none}
+.mobile-game #mobileShell:has(#stage.is-fullscreen) {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  padding: max(5px, env(safe-area-inset-top)) max(5px, env(safe-area-inset-right))
+    max(5px, env(safe-area-inset-bottom)) max(5px, env(safe-area-inset-left));
+  background: #102724;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  overflow: auto;
+}
+.mobile-game #stage.is-fullscreen {position: relative; inset: auto; height: auto; z-index: auto; aspect-ratio: 16 / 9; flex: 0 0 auto}
+.mobile-game #fullscreen {z-index: 10}
+@media (orientation: landscape) and (max-height: 650px) {
+  .mobile-game header {min-height: 42px; padding-block: 0}
+  .mobile-game .brand span, .mobile-game .chapter {display: none}
+  .mobile-game main {margin-top: 3px}
+  .mobile-game #mobileShell,
+  .mobile-game #mobileShell:has(#stage.is-fullscreen) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+  }
+  .mobile-game #mobileShell:has(#touch:not([hidden])) {
+    grid-template-columns: clamp(98px, 15vw, 138px) minmax(0, 1fr) clamp(106px, 19vw, 184px);
+    gap: 6px;
+  }
+  .mobile-game #touch:not([hidden]) {display: contents}
+  .mobile-game #stage {grid-row: 1; max-height: calc(100dvh - 49px)}
+  .mobile-game #mobileShell:has(#touch:not([hidden])) #stage {grid-column: 2}
+  .mobile-game .mobile-move {grid-area: 1 / 1}
+  .mobile-game .mobile-action {grid-area: 1 / 3}
+  .mobile-game #touch button {height: clamp(44px, 12dvh, 58px); font-size: 12px}
+  .mobile-game #stage.is-fullscreen {max-height: calc(100dvh - 12px)}
+  .mobile-game .mobile-info {display: none}
+}
+
+/* Keep the hosting badge outside the scrollable game and fullscreen controls. */
+.mobile-game.netlify-layout {
+  --badge-clearance: 64px;
+  --game-bottom-inset: calc(var(--badge-clearance) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  padding-bottom: var(--game-bottom-inset);
+  overflow: hidden;
+}
+.netlify-layout header {width: 100%; flex: none}
+.mobile-game.netlify-layout main {
+  width: 100%;
+  min-height: 0;
+  margin-inline: auto;
+  flex: 1;
+  overflow: auto;
+}
+.mobile-game.netlify-layout #mobileShell:has(#stage.is-fullscreen) {
+  bottom: var(--game-bottom-inset);
+}

@@ -1,0 +1,522 @@
+{
+  "schema_version": 1,
+  "art_direction_brief": "../art-direction-brief.md",
+  "assets": [
+    {
+      "id": "wukong",
+      "role": "player",
+      "path": "wukong.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "11x12",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 5,
+          "y": 11
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "42x45"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../wukong.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "young-monkey",
+      "role": "companion",
+      "path": "young-monkey.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "9x10",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 4,
+          "y": 9
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "34x38"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../young-monkey.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "elder-monkey",
+      "role": "companion",
+      "path": "elder-monkey.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "10x10",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 4,
+          "y": 10
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "38x39"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../elder-monkey.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "dragon-king",
+      "role": "seated NPC",
+      "path": "dragon-king.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "16x17",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 8,
+          "y": 17
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "64x67"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../dragon-king.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "king-yama",
+      "role": "seated NPC",
+      "path": "king-yama.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "16x17",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 7,
+          "y": 16
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "63x66"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../king-yama.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "imp",
+      "role": "enemy",
+      "path": "imp.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "11x11",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 5,
+          "y": 10
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "44x42"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../imp.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "pig-demon",
+      "role": "enemy",
+      "path": "pig-demon.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "14x13",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 6,
+          "y": 12
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "54x50"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../pig-demon.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "shrimp-soldier",
+      "role": "enemy",
+      "path": "shrimp-soldier.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "15x10",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 7,
+          "y": 10
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "58x40"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../shrimp-soldier.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "crab-guard",
+      "role": "enemy",
+      "path": "crab-guard.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "14x10",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 6,
+          "y": 9
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "53x37"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../crab-guard.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "red-crowned-crane",
+      "role": "flying form",
+      "path": "red-crowned-crane.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "16x13",
+        "alpha": true,
+        "anchor": {
+          "kind": "center",
+          "x": 8,
+          "y": 6
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "64x49"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../red-crowned-crane.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "fly",
+      "role": "flying form",
+      "path": "fly.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "5x4",
+        "alpha": true,
+        "anchor": {
+          "kind": "center",
+          "x": 2,
+          "y": 2
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "17x16"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../fly.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "tiger",
+      "role": "ground form",
+      "path": "tiger.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "22x12",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 10,
+          "y": 12
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "85x48"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-49ec7560-3421-421c-84a6-3067cbf499b1.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../tiger.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    },
+    {
+      "id": "red-squirrel",
+      "role": "ground form",
+      "path": "red-squirrel.png",
+      "status": "preview",
+      "technical": {
+        "dimensions": "11x9",
+        "alpha": true,
+        "anchor": {
+          "kind": "bottom-center",
+          "x": 5,
+          "y": 8
+        },
+        "frames": 1,
+        "facing": "right",
+        "filtering": "nearest",
+        "collision_role": "visual only; use existing gameplay hitboxes",
+        "original_dimensions": "41x33"
+      },
+      "visual_locks": [
+        "crisp pixel clusters",
+        "upper-right highlights",
+        "dark plum outline"
+      ],
+      "source": {
+        "kind": "generated",
+        "url_or_tool": "OpenAI image_gen",
+        "created_at": "2026-11-07",
+        "prompt_or_source_record": "exec-2bc1c60b-c396-4735-9536-dae6c5151dfb.png",
+        "normalization": "4 x 4 block reduction with binary alpha and original palette",
+        "license": "No third-party stock assets supplied; OpenAI output terms apply",
+        "derived_from": "../red-squirrel.png"
+      },
+      "verification": {
+        "native_scale_reviewed": false,
+        "in_engine_reviewed": false,
+        "technical_checks_passed": true
+      }
+    }
+  ],
+  "pixel_reduction": {
+    "block_size": [
+      4,
+      4
+    ],
+    "partial_blocks": "transparent padding at right and bottom",
+    "minimum_opaque_samples": 6,
+    "color": "nearest original color to the mean of opaque samples"
+  }
+}

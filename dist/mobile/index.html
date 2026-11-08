@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#102c2a"><title>西游记 · 手机试玩</title><link rel="stylesheet" href="../style.css?v=3505074bbdb8"><link rel="stylesheet" href="./mobile.css?v=17bdec2628f2"></head><body class="mobile-game">
+<header><a class="brand" href="./">西 遊 記 <span>JOURNEY TO THE WEST</span></a><div class="edition">手机触屏版</div><button id="sound" aria-label="开关声音">♫ 声音：开</button></header>
+<main><div class="chapter"><span id="chapterLabel">CHAPTER 01 / 花果山</span><span id="status">一段传奇，从一块石头开始</span></div><div id="mobileShell"><section id="stage" tabindex="0" aria-label="游戏画面"><canvas id="game" width="1920" height="1080"></canvas><div class="grain"></div><div id="cover" class="overlay"><div class="eyebrow">A PIXEL ADVENTURE</div><h1>JOURNEY<br><small>TO THE</small> WEST</h1><div class="cn-title">石 破 天 惊 · 初 探 水 帘 洞</div><p>按住方向移动，点击屏幕推进剧情。</p><button class="primary" id="start">进入游戏 <span>→</span></button><button id="continue" class="subtle" hidden>继续上次旅程</button><div class="cover-foot">第一关 · 石猴初生 <i>✦</i> 剧情 / 答题 / 冒险</div></div><div id="dialog" hidden></div><div id="hud" hidden><span id="area"></span><span id="counts"></span></div><span id="health" class="vital" hidden>生命 <meter id="healthMeter" min="0" max="100" value="100"></meter> <b id="healthValue">100/100</b> <span id="livesValue">命 3/3</span></span><span id="energy" class="vital" hidden>灵气 <meter id="energyMeter" min="0" max="10" value="0" aria-label="元气"></meter> <b id="energyValue">0/10</b></span><span id="stamina" class="vital" hidden>体力 <meter id="staminaMeter" min="0" max="100" value="100"></meter> <b id="staminaValue">100/100</b></span><aside id="quest" hidden aria-live="polite"><small>当前任务</small><strong id="questTitle"></strong></aside><div id="toast" role="status"></div><button id="practiceNext" hidden>下一关 →</button><div id="heavenBossHud" hidden><span id="heavenBossName">南天门 · 天将</span> <b id="heavenBossValue">350 / 350</b><meter id="heavenBossMeter" min="0" max="350" value="350" aria-label="天将生命值"></meter></div><div id="heavenWarning" role="status" hidden></div><button id="rainStop" type="button" hidden>午间阵雨 · S 停雨</button><button id="fullscreen" type="button" aria-label="进入全屏" aria-pressed="false">全屏</button><button id="pause" hidden aria-label="暂停游戏">Ⅱ</button><div id="pausePanel" class="modal" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
+  <span class="eyebrow">TAKE A BREATH</span><h2 id="pauseTitle">山风正好，歇一歇。</h2>
+  <button id="resume" class="primary">继续旅程 →</button>
+  <div class="pause-actions"><button id="saveNow" type="button">存档</button><button id="chapterSelect" type="button">关卡选择</button></div>
+  <p id="saveResult" role="status"></p><button id="restart" class="subtle">从头开始</button>
+</div>
+<div id="chapterPanel" class="modal" role="dialog" aria-modal="true" aria-labelledby="chapterSelectTitle" hidden>
+  <h2 id="chapterSelectTitle">关卡选择</h2>
+  <div class="chapter-grid">
+    <button id="selectChapter1" type="button"><span>第一关</span><strong>石猴初生</strong><small id="chapterState1"></small></button>
+    <button id="selectChapter2" type="button" disabled><span>第二关</span><strong>漂洋寻仙</strong><small id="chapterState2"></small></button>
+    <button id="selectChapter3" type="button" disabled><span>第三关</span><strong>龙宫与幽冥</strong><small id="chapterState3"></small></button>
+    <button id="selectChapter4" type="button" disabled><span>第四关</span><strong>官封弼马温</strong><small id="chapterState4"></small></button>
+    <button id="selectChapter5" type="button" disabled><span>第五关</span><strong>大闹天宫</strong><small id="chapterState5"></small></button>
+  </div>
+  <button id="chapterBack" class="subtle" type="button">返回暂停菜单</button>
+</div><div id="deathPanel" class="modal" role="status" hidden><h2>你死了</h2><p id="deathLives"></p></div><div id="ending" class="overlay" hidden></div></section>
+<div id="touch" hidden>
+  <div class="mobile-move" role="group" aria-label="移动">
+    <span class="pad-label">移动</span>
+    <button type="button" data-key="ArrowLeft" aria-label="向左移动">◀</button>
+    <button type="button" data-key="ArrowRight" aria-label="向右移动">▶</button>
+    <button type="button" id="runButton" data-key="KeyZ" aria-label="按住疾跑，配合方向键">疾跑</button>
+    <button type="button" id="flightDown" data-key="ArrowDown" hidden aria-label="下降">▼ 下降</button>
+  </div>
+  <div class="mobile-action" role="group" aria-label="动作和法术">
+    <span class="pad-label">动作</span>
+    <button type="button" class="main-action" data-key="Space"><span class="jump-label">跳跃</span><span class="ascend-label">上升</span></button>
+    <button type="button" class="main-action" data-key="KeyE">互动</button>
+    <button type="button" id="staffButton" data-key="KeyA" hidden>挥棒</button>
+    <button type="button" id="giantStaffButton" data-key="KeyD" aria-label="巨化棍棒" hidden>巨化</button>
+    <button type="button" id="bindButton" data-key="KeyH" aria-label="定身术" hidden>定身</button>
+    <button type="button" id="cloneButton" data-key="KeyG" aria-label="分身术" hidden>分身</button>
+    <button type="button" id="spellButton" data-key="KeyF" aria-label="七十二变" hidden>变化</button>
+    <button type="button" id="cloudButton" data-key="KeyS" aria-label="驾筋斗云" hidden>驾云</button>
+  </div>
+</div></div>
+<div class="mobile-info"><span>可同时按住方向和动作键。任务提示中的 E 对应「互动」。</span><a href="../">网页版</a></div>
+<span id="hint" hidden></span>
+</main><script src="../game.js?v=8efaeeb1eff1"></script><script src="./mobile.js?v=fa4adb725f7a"></script></body></html>
